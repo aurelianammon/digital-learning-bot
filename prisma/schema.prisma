@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum JobType {
+  TEXT
+  IMAGE
+  VIDEO
+  PROMPT
+}
+
+model Job {
+  id        String   @id @default(cuid())
+  type      JobType
+  message   String
+  date      DateTime
+  state     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("jobs")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+}
+
+model Context {
+  id      String @id @default(cuid())
+  content String
+
+  @@map("context")
+}
+
+model File {
+  id        String   @id @default(cuid())
+  filename  String
+  type      String   // "image" or "video"
+  path      String
+  createdAt DateTime @default(now())
+
+  @@map("files")
+}
+
+model BotSettings {
+  id          String @id @default(cuid())
+  name        String @default("assistant")
+  conversation String? // Telegram chat ID
+  updatedAt   DateTime @updatedAt
+
+  @@map("bot_settings")
+}
