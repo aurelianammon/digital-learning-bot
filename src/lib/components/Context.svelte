@@ -23,7 +23,7 @@
     }
 </script>
 
-<div class="context">
+<div class="context context-component">
     <h3 class="tile-title">Context / Personality</h3>
     <textarea
         bind:value={context}
@@ -43,7 +43,7 @@
         overflow: hidden;
         padding: 10px;
         background: rgb(200, 255, 186);
-        height: fit-content;
+        /* height: fit-content; */
     }
 
     textarea {
@@ -54,7 +54,8 @@
         font-family: inherit;
         font-size: 14px;
         resize: vertical;
-        min-height: 200px;
+        min-height: 250px;
+        height: calc(100% - 50px);
         box-sizing: border-box;
     }
 
@@ -62,5 +63,19 @@
         outline: none;
         border-color: #667eea;
         box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+        .context {
+            grid-column: unset;
+            grid-row: unset;
+            order: 2;
+            margin-bottom: 0;
+        }
+
+        textarea {
+            min-height: 200px;
+        }
     }
 </style>

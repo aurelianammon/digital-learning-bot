@@ -208,6 +208,7 @@
         grid-column: 1 / 4;
         grid-row: 2;
         overflow: hidden;
+        height: fit-content;
     }
 
     .history {
@@ -224,9 +225,41 @@
         border: 1px solid black;
         border-radius: 20px;
         padding: 0 14px;
-        height: 40px;
-        line-height: 38px;
+        height: 38px;
+        line-height: 37px;
         width: fit-content;
         margin-bottom: 10px;
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+        .bot-dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .settings {
+            grid-column: unset;
+            grid-row: unset;
+            order: 1;
+        }
+
+        .scheduler {
+            grid-column: unset;
+            grid-row: unset;
+            order: 3;
+        }
+
+        .history {
+            grid-column: unset;
+            grid-row: unset;
+            order: 4;
+        }
+
+        .dashboard-content {
+            margin: 10px;
+            padding-top: 10px;
+        }
     }
 </style>

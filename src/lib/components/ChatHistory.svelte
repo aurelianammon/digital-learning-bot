@@ -147,7 +147,7 @@
 
 <style>
     .chat-history {
-        background: #f0f0f0;
+        background: #ff7272;
         padding: 10px;
         height: fit-content;
     }
@@ -206,20 +206,19 @@
     }
 
     .message {
-        background: coral;
+        background: transparent;
         height: auto;
         padding: 10px;
-        border-radius: 3px;
-        overflow: hidden;
-    }
-    .message.inactive {
-        background-color: darkgrey;
+        border-radius: 8px;
+        border: 1px solid black;
+        font-size: 14px;
+        line-height: 1.5;
     }
     .message .header {
         font-size: 10px;
         margin-bottom: 5px;
         height: 17px;
-        line-height: 17px;
+        line-height: 16px;
     }
     .header .date {
         /* width: 50%; */
@@ -227,16 +226,19 @@
         background-color: black;
         color: white;
         margin-right: 5px;
-        border-radius: 3px;
+        border-radius: 0px;
         padding: 0 5px;
+        padding-bottom: 1px;
     }
     .header .type {
         float: left;
         background-color: black;
         color: white;
         margin-right: 5px;
-        border-radius: 3px;
+        border-radius: 0px;
         padding: 0 5px;
+        padding-bottom: 1px;
+        text-transform: uppercase;
     }
     .message .controll_button {
         float: right;
@@ -246,6 +248,8 @@
         /* background-color: coral; */
         cursor: pointer;
         padding: 0 6px;
+        padding-bottom: 1px;
+        border-radius: 0px;
     }
     .message-content {
         white-space: break-spaces;

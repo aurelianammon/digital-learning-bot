@@ -153,7 +153,11 @@
         <!-- API Key Section -->
         <div class="setting-section">
             <div class="section-header">
-                <label class="section-label">API Configuration</label>
+                {#if openaiKey}
+                    <label class="section-label">API Configuration ✔️</label>
+                {:else}
+                    <label class="section-label">API Configuration</label>
+                {/if}
                 <button
                     class="toggle-button"
                     on:click={() => (showApiKeySettings = !showApiKeySettings)}
@@ -180,7 +184,11 @@
         <!-- Chat Linking Section -->
         <div class="setting-section">
             <div class="section-header">
-                <label class="section-label">Telegram Chat</label>
+                {#if linkedChat}
+                    <label class="section-label">Telegram Chat ✔️</label>
+                {:else}
+                    <label class="section-label">Telegram Chat</label>
+                {/if}
                 <button
                     class="toggle-button"
                     on:click={() => (showLinkedChat = !showLinkedChat)}
@@ -222,22 +230,8 @@
                         {/if}
                     {:else}
                         <div class="linked-chat-info">
-                            <div class="chat-status">
-                                <span class="status-indicator">●</span>
-                                <span>Chat Linked</span>
-                            </div>
-                            <div class="chat-details">
-                                <span class="chat-id"
-                                    >ID: {linkedChat.chatId}</span
-                                >
-                                <span class="link-date"
-                                    >{new Date(
-                                        linkedChat.linkedAt
-                                    ).toLocaleDateString()}</span
-                                >
-                            </div>
                             <button class="unlink-button" on:click={unlinkChat}>
-                                Unlink Chat
+                                Unlink from {linkedChat.chatId}
                             </button>
                         </div>
                     {/if}
@@ -251,9 +245,10 @@
             <div class="action-buttons">
                 <button
                     class="delete-button"
+                    title="Permanently delete bot"
                     on:click={() => (showDeleteConfirm = true)}
                 >
-                    🗑️ Delete Bot
+                    Delete
                 </button>
             </div>
         </div>
@@ -294,7 +289,7 @@
 
 <style>
     .bot-settings {
-        background: rgb(255, 255, 255);
+        background: rgb(255, 238, 107);
         width: 100%;
         height: 100%;
         padding: 10px;
@@ -305,13 +300,14 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        height: calc(100% - 50px);
     }
 
     /* Setting Sections */
     .setting-section {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 5px;
     }
 
     .section-label {
@@ -334,8 +330,9 @@
         border: none;
         cursor: pointer;
         font-size: 12px;
-        color: #666;
-        padding: 4px;
+        color: black;
+        padding: 0px;
+        padding-right: 5px;
         transition: color 0.2s;
     }
 
@@ -343,25 +340,23 @@
         color: #333;
     }
 
-    .toggle-button.active {
-        color: #007bff;
-    }
-
     .setting-content {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        padding-left: 8px;
-        border-left: 2px solid #e9ecef;
+        gap: 5px;
+        /* padding-left: 8px;
+        border-left: 2px solid #e9ecef; */
     }
 
     /* Input Styles */
     .name-input {
         width: 100%;
-        padding: 8px 12px;
+        padding: 8px;
         border: 1px solid #000000;
         border-radius: 6px;
+        font: inherit;
         font-size: 14px;
+        line-height: 17px;
         box-sizing: border-box;
     }
 
@@ -373,12 +368,13 @@
 
     .api-key-input {
         width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
+        padding: 8px;
+        border: 1px solid black;
         border-radius: 6px;
         font-family: monospace;
-        font-size: 12px;
+        font-size: 14px;
         box-sizing: border-box;
+        line-height: 17px;
     }
 
     .api-key-input:focus {
@@ -389,19 +385,20 @@
 
     /* Button Styles */
     .save-button {
-        background: #28a745;
+        background: black;
         color: white;
         border: none;
         border-radius: 6px;
         padding: 8px 16px;
         cursor: pointer;
-        font-size: 12px;
+        height: 35px;
+        font-size: 14px;
         font-weight: 500;
         transition: background-color 0.2s;
     }
 
     .save-button:hover {
-        background: #218838;
+        background: #00a724;
     }
 
     /* Link Instructions */
@@ -436,10 +433,11 @@
 
     .pin-input {
         flex: 1;
-        padding: 8px 12px;
+        padding: 8px;
         border: 1px solid #ddd;
         border-radius: 6px;
         font-size: 14px;
+        line-height: 17px;
         text-align: center;
         letter-spacing: 2px;
         font-family: monospace;
@@ -452,13 +450,14 @@
     }
 
     .verify-button {
-        background: #007bff;
+        background: black;
         color: white;
         border: none;
         border-radius: 6px;
-        padding: 8px 16px;
+        padding: 8px;
+        height: 35px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 500;
         transition: background-color 0.2s;
     }
@@ -483,57 +482,25 @@
 
     /* Linked Chat Info */
     .linked-chat-info {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 6px;
-        padding: 12px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-    }
-
-    .chat-status {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        font-weight: 500;
-        color: #155724;
-    }
-
-    .status-indicator {
-        color: #28a745;
-        font-size: 16px;
-    }
-
-    .chat-details {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        font-size: 11px;
-        color: #666;
-    }
-
-    .chat-id {
-        font-family: monospace;
-        font-weight: 500;
-    }
-
-    .link-date {
-        color: #999;
+        gap: 5px;
+        font-size: 14px;
+        line-height: 17px;
     }
 
     .unlink-button {
-        background: #dc3545;
+        background: black;
         color: white;
         border: none;
         border-radius: 6px;
-        padding: 6px 12px;
+        padding: 8px;
         cursor: pointer;
-        font-size: 11px;
-        font-weight: 500;
+        font-size: 14px;
+        height: 35px;
         transition: background-color 0.2s;
         align-self: flex-start;
+        width: 100%;
     }
 
     .unlink-button:hover {
@@ -552,13 +519,14 @@
     }
 
     .delete-button {
-        background: #dc3545;
+        background: #000000;
         color: white;
         border: none;
         border-radius: 6px;
-        padding: 8px 12px;
+        padding: 8px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 14px;
+        height: 35px;
         font-weight: 500;
         transition: background-color 0.2s;
     }

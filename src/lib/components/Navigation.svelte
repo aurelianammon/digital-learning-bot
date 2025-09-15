@@ -13,7 +13,7 @@
         <h1 class="nav-title">Digital Learning Bot</h1>
         <div class="buttons">
             <button
-                class="nav-button"
+                class="nav-button id-button"
                 title="Copy Bot ID to clipboard"
                 on:click={() => navigator.clipboard.writeText(selectedBotId)}
             >
@@ -79,5 +79,12 @@
         display: flex;
         gap: 10px;
         align-items: center;
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+        .id-button {
+            display: none;
+        }
     }
 </style>
