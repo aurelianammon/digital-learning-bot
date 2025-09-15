@@ -1,0 +1,15 @@
+@font-face {
+    font-family: "DepartureMono";
+    src: url("/font/DepartureMono-Regular.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT America Mono";
+    src: url("/font/GT America Mono Regular.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}

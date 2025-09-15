@@ -131,139 +131,133 @@
             alert("Error deleting bot");
         }
     }
-
-    async function restartBot() {
-        try {
-            const response = await fetch("/api/bot/restart", {
-                method: "POST",
-            });
-            if (response.ok) {
-                alert("Bot restarted successfully!");
-            } else {
-                alert("Failed to restart bot");
-            }
-        } catch (error) {
-            console.error("Error restarting bot:", error);
-            alert("Error restarting bot");
-        }
-    }
 </script>
 
 <!-- Bot Settings -->
 <div class="bot-settings">
-    <div class="basic-settings">
-        <input
-            class="nameInput"
-            bind:value={botName}
-            on:change={updateBotName}
-            on:focus={(e) => (e.target as HTMLInputElement)?.select()}
-            title="Click to edit name 🖖"
-        />
-        <button
-            class="settings-button"
-            on:click={() => (showApiKeySettings = !showApiKeySettings)}
-            title="API Settings"
-        >
-            🔑
-        </button>
-        <button
-            class="settings-button"
-            on:click={() => (showLinkedChat = !showLinkedChat)}
-            title="Linked Chat"
-        >
-            💬 {linkedChat ? "Linked" : "No chat"}
-        </button>
-        <button
-            class="delete-button"
-            on:click={() => (showDeleteConfirm = true)}
-            title="Delete Bot"
-        >
-            🗑️
-        </button>
-    </div>
+    <h3 class="tile-title">Settings</h3>
 
-    {#if showApiKeySettings}
-        <div class="api-settings">
-            <h4>API Configuration</h4>
-            <div class="setting-group">
-                <label for="openaiKey">OpenAI API Key:</label>
-                <div class="key-input-group">
+    <div class="setting-sections">
+        <!-- Bot Name Section -->
+        <div class="setting-section">
+            <label class="section-label">Name</label>
+            <input
+                class="name-input"
+                bind:value={botName}
+                on:change={updateBotName}
+                on:focus={(e) => (e.target as HTMLInputElement)?.select()}
+                placeholder="Enter bot name..."
+            />
+        </div>
+
+        <!-- API Key Section -->
+        <div class="setting-section">
+            <div class="section-header">
+                <label class="section-label">API Configuration</label>
+                <button
+                    class="toggle-button"
+                    on:click={() => (showApiKeySettings = !showApiKeySettings)}
+                    class:active={showApiKeySettings}
+                >
+                    {showApiKeySettings ? "▼" : "▶"}
+                </button>
+            </div>
+            {#if showApiKeySettings}
+                <div class="setting-content">
                     <input
-                        id="openaiKey"
                         type="password"
                         bind:value={openaiKey}
                         placeholder="sk-..."
+                        class="api-key-input"
                     />
-                    <button on:click={updateApiKey} class="save-btn"
-                        >Save</button
-                    >
+                    <button on:click={updateApiKey} class="save-button">
+                        Save Key
+                    </button>
                 </div>
-            </div>
+            {/if}
         </div>
-    {/if}
 
-    {#if showLinkedChat}
-        <div class="linked-chat">
-            <h4>Linked Chat</h4>
-
-            {#if !linkedChat}
-                <div class="pin-verification">
-                    <h5>Link Chat to This Bot</h5>
-                    <p>
-                        1. Add any Telegram bot to a chat<br />
-                        2. Send <code>/link</code> in that chat<br />
-                        3. Enter the PIN you receive here to link that chat to
-                        <strong>this specific bot</strong>:
-                    </p>
-                    <div class="pin-input-group">
-                        <input
-                            type="text"
-                            bind:value={pinToVerify}
-                            placeholder="Enter 6-digit PIN"
-                            maxlength="6"
-                            on:keydown={(e) => e.key === "Enter" && verifyPin()}
-                        />
-                        <button
-                            on:click={verifyPin}
-                            disabled={!pinToVerify.trim()}>Verify</button
-                        >
-                    </div>
-                    {#if verificationMessage}
-                        <div class="verification-message">
-                            {verificationMessage}
+        <!-- Chat Linking Section -->
+        <div class="setting-section">
+            <div class="section-header">
+                <label class="section-label">Telegram Chat</label>
+                <button
+                    class="toggle-button"
+                    on:click={() => (showLinkedChat = !showLinkedChat)}
+                    class:active={showLinkedChat}
+                >
+                    {showLinkedChat ? "▼" : "▶"}
+                </button>
+            </div>
+            {#if showLinkedChat}
+                <div class="setting-content">
+                    {#if !linkedChat}
+                        <div class="link-instructions">
+                            <p>1. Add bot to Telegram chat</p>
+                            <p>2. Send <code>/link</code> command</p>
+                            <p>3. Enter PIN below:</p>
+                        </div>
+                        <div class="pin-section">
+                            <input
+                                type="text"
+                                bind:value={pinToVerify}
+                                placeholder="6-digit PIN"
+                                maxlength="6"
+                                class="pin-input"
+                                on:keydown={(e) =>
+                                    e.key === "Enter" && verifyPin()}
+                            />
+                            <button
+                                on:click={verifyPin}
+                                disabled={!pinToVerify.trim()}
+                                class="verify-button"
+                            >
+                                Link
+                            </button>
+                        </div>
+                        {#if verificationMessage}
+                            <div class="verification-message">
+                                {verificationMessage}
+                            </div>
+                        {/if}
+                    {:else}
+                        <div class="linked-chat-info">
+                            <div class="chat-status">
+                                <span class="status-indicator">●</span>
+                                <span>Chat Linked</span>
+                            </div>
+                            <div class="chat-details">
+                                <span class="chat-id"
+                                    >ID: {linkedChat.chatId}</span
+                                >
+                                <span class="link-date"
+                                    >{new Date(
+                                        linkedChat.linkedAt
+                                    ).toLocaleDateString()}</span
+                                >
+                            </div>
+                            <button class="unlink-button" on:click={unlinkChat}>
+                                Unlink Chat
+                            </button>
                         </div>
                     {/if}
                 </div>
             {/if}
-
-            {#if linkedChat}
-                <div class="current-chat">
-                    <h5>Current Linked Chat</h5>
-                    <div class="chat-item">
-                        <div class="chat-info">
-                            <span class="chat-id"
-                                >Chat ID: {linkedChat.chatId}</span
-                            >
-                            <span class="chat-date"
-                                >Linked: {new Date(
-                                    linkedChat.linkedAt
-                                ).toLocaleDateString()}</span
-                            >
-                        </div>
-                        <button
-                            class="unlink-btn"
-                            on:click={unlinkChat}
-                            title="Unlink chat"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            {:else}
-                <p>No chat linked to this bot yet.</p>
-            {/if}
         </div>
-    {/if}
+
+        <!-- Actions Section -->
+        <div class="setting-section actions-section">
+            <label class="section-label">Actions</label>
+            <div class="action-buttons">
+                <button
+                    class="delete-button"
+                    on:click={() => (showDeleteConfirm = true)}
+                >
+                    🗑️ Delete Bot
+                </button>
+            </div>
+        </div>
+    </div>
 
     {#if showDeleteConfirm}
         <div class="delete-confirmation">
@@ -300,229 +294,276 @@
 
 <style>
     .bot-settings {
-        min-width: 300px;
+        background: rgb(255, 255, 255);
+        width: 100%;
+        height: 100%;
+        padding: 10px;
+        box-sizing: border-box;
     }
 
-    .basic-settings {
+    .setting-sections {
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Setting Sections */
+    .setting-section {
+        display: flex;
+        flex-direction: column;
         gap: 8px;
-        margin-bottom: 16px;
     }
 
-    .nameInput {
-        padding: 8px;
+    .section-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .toggle-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        color: #666;
+        padding: 4px;
+        transition: color 0.2s;
+    }
+
+    .toggle-button:hover {
+        color: #333;
+    }
+
+    .toggle-button.active {
+        color: #007bff;
+    }
+
+    .setting-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-left: 8px;
+        border-left: 2px solid #e9ecef;
+    }
+
+    /* Input Styles */
+    .name-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #000000;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .name-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
+    .api-key-input {
+        width: 100%;
+        padding: 8px 12px;
         border: 1px solid #ddd;
-        border-radius: 4px;
-        flex: 1;
-        min-width: 120px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 12px;
+        box-sizing: border-box;
     }
 
-    .settings-button {
+    .api-key-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
+    /* Button Styles */
+    .save-button {
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+
+    .save-button:hover {
+        background: #218838;
+    }
+
+    /* Link Instructions */
+    .link-instructions {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .link-instructions p {
+        margin: 0 0 4px 0;
+        color: #666;
+    }
+
+    .link-instructions code {
+        background: #e9ecef;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* PIN Section */
+    .pin-section {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .pin-input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        text-align: center;
+        letter-spacing: 2px;
+        font-family: monospace;
+    }
+
+    .pin-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
+    .verify-button {
         background: #007bff;
         color: white;
         border: none;
-        border-radius: 4px;
-        padding: 8px 12px;
+        border-radius: 6px;
+        padding: 8px 16px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 12px;
+        font-weight: 500;
         transition: background-color 0.2s;
-        white-space: nowrap;
     }
 
-    .settings-button:hover {
+    .verify-button:hover:not(:disabled) {
         background: #0056b3;
+    }
+
+    .verify-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+
+    /* Verification Message */
+    .verification-message {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    /* Linked Chat Info */
+    .linked-chat-info {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 6px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .chat-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #155724;
+    }
+
+    .status-indicator {
+        color: #28a745;
+        font-size: 16px;
+    }
+
+    .chat-details {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: #666;
+    }
+
+    .chat-id {
+        font-family: monospace;
+        font-weight: 500;
+    }
+
+    .link-date {
+        color: #999;
+    }
+
+    .unlink-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+        align-self: flex-start;
+    }
+
+    .unlink-button:hover {
+        background: #c82333;
+    }
+
+    /* Actions Section */
+    .actions-section {
+        margin-top: auto;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
     .delete-button {
         background: #dc3545;
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         padding: 8px 12px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 12px;
+        font-weight: 500;
         transition: background-color 0.2s;
-        white-space: nowrap;
     }
 
     .delete-button:hover {
-        background: #c82333;
-    }
-
-    .api-settings,
-    .linked-chat {
-        background: #f8f9fa;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        padding: 16px;
-        margin-bottom: 16px;
-    }
-
-    .api-settings h4,
-    .linked-chat h4 {
-        margin: 0 0 12px 0;
-        color: #333;
-    }
-
-    .setting-group {
-        margin-bottom: 12px;
-    }
-
-    .setting-group label {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: 500;
-        color: #555;
-    }
-
-    .key-input-group,
-    .pin-input-group {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .key-input-group input,
-    .pin-input-group input {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-family: monospace;
-    }
-
-    .save-btn {
-        background: #28a745;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 14px;
-    }
-
-    .save-btn:hover {
-        background: #218838;
-    }
-
-    .pin-verification {
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 12px;
-        margin-bottom: 16px;
-    }
-
-    .pin-verification h5 {
-        margin: 0 0 8px 0;
-        color: #333;
-    }
-
-    .pin-verification p {
-        margin: 0 0 8px 0;
-        font-size: 0.9em;
-        color: #666;
-    }
-
-    .pin-verification code {
-        background: #e9ecef;
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-weight: bold;
-    }
-
-    .verification-message {
-        margin-top: 8px;
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 0.9em;
-    }
-
-    .pending-links,
-    .current-chat {
-        margin-bottom: 16px;
-    }
-
-    .pending-links h5,
-    .current-chat h5 {
-        margin: 0 0 8px 0;
-        color: #333;
-    }
-
-    .pending-link {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 4px;
-        padding: 8px;
-        margin-bottom: 4px;
-        font-size: 0.85em;
-    }
-
-    .pending-link span {
-        display: block;
-        margin-bottom: 2px;
-    }
-
-    .pending-link code {
-        background: #fff;
-        padding: 1px 4px;
-        border-radius: 3px;
-        font-weight: bold;
-        color: #d63384;
-    }
-
-    .chat-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 8px;
-        margin-bottom: 4px;
-    }
-
-    .chat-info {
-        flex: 1;
-    }
-
-    .chat-id {
-        display: block;
-        font-family: monospace;
-        font-size: 0.85em;
-        color: #333;
-        margin-bottom: 2px;
-    }
-
-    .chat-name {
-        display: block;
-        font-weight: 500;
-        color: #007bff;
-        margin-bottom: 2px;
-    }
-
-    .chat-date {
-        display: block;
-        font-size: 0.8em;
-        color: #666;
-    }
-
-    .unlink-btn {
-        background: #dc3545;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        cursor: pointer;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .unlink-btn:hover {
         background: #c82333;
     }
 

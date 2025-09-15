@@ -102,43 +102,75 @@
     }
 </script>
 
-<h2>
-    Active Chat History
-    {#if showNewMessageIndicator}
-        <span class="new-message-indicator">✨ New messages!</span>
-    {/if}
-</h2>
+<div class="chat-history">
+    <div class="chat-history-header">
+        <h3 class="tile-title">Chat History</h3>
+        {#if showNewMessageIndicator}
+            <span class="new-message-indicator">✨ Updated!</span>
+        {/if}
+    </div>
 
-{#if loading}
-    <div class="loading">Loading messages...</div>
-{:else if messages.length === 0}
-    <div class="no-messages">No messages yet</div>
-{:else}
-    {#each messages as message, index (message.id)}
-        <div class="job">
-            <div class="header">
-                <div class="date">
-                    {new Date(message.createdAt).toLocaleString("de-CH", {
-                        timeZone: "Europe/Zurich",
-                    })}
+    <div class="chat-history-content">
+        {#if loading}
+            <div class="loading">Loading messages...</div>
+        {:else if messages.length === 0}
+            <div class="no-messages">No messages yet</div>
+        {:else}
+            {#each messages as message, index (message.id)}
+                <div class="message">
+                    <div class="header">
+                        <div class="date">
+                            {new Date(message.createdAt).toLocaleString(
+                                "de-CH",
+                                {
+                                    timeZone: "Europe/Zurich",
+                                }
+                            )}
+                        </div>
+                        <div class="type">{message.role}</div>
+                        <button
+                            class="controll_button"
+                            title="Remove message from history 💀"
+                            on:click={() => removeMessage(message.id)}
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <div class="message-content">
+                        {@html message.content}
+                    </div>
                 </div>
-                <div class="type">{message.role}</div>
-                <button
-                    class="controll_button"
-                    title="Remove message from history 💀"
-                    on:click={() => removeMessage(message.id)}
-                >
-                    ×
-                </button>
-            </div>
-            <div class="message">
-                {@html message.content}
-            </div>
-        </div>
-    {/each}
-{/if}
+            {/each}
+        {/if}
+    </div>
+</div>
 
 <style>
+    .chat-history {
+        background: #f0f0f0;
+        padding: 10px;
+        height: fit-content;
+    }
+
+    .tile-title {
+        margin-bottom: 0px;
+    }
+
+    .chat-history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .chat-history-content {
+        max-height: 800px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .loading {
         text-align: center;
         padding: 20px;
@@ -171,5 +203,52 @@
         100% {
             opacity: 1;
         }
+    }
+
+    .message {
+        background: coral;
+        height: auto;
+        padding: 10px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .message.inactive {
+        background-color: darkgrey;
+    }
+    .message .header {
+        font-size: 10px;
+        margin-bottom: 5px;
+        height: 17px;
+        line-height: 17px;
+    }
+    .header .date {
+        /* width: 50%; */
+        float: left;
+        background-color: black;
+        color: white;
+        margin-right: 5px;
+        border-radius: 3px;
+        padding: 0 5px;
+    }
+    .header .type {
+        float: left;
+        background-color: black;
+        color: white;
+        margin-right: 5px;
+        border-radius: 3px;
+        padding: 0 5px;
+    }
+    .message .controll_button {
+        float: right;
+        height: 17px;
+        font-size: 10px;
+        line-height: 7px;
+        /* background-color: coral; */
+        cursor: pointer;
+        padding: 0 6px;
+    }
+    .message-content {
+        white-space: break-spaces;
+        /* line-height: 17px; */
     }
 </style>

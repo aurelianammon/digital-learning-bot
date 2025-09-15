@@ -2,8 +2,9 @@ body {
     /* margin: 10px; */
     font-size: calc(15px + 0.390625vw);
     /* padding-bottom: 3rem; */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        Helvetica, Arial, sans-serif;
+    font-family: "GT America Mono", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: black;
 }
 
 h1,
@@ -67,7 +68,7 @@ button,
     background: black;
     border: none;
     padding: 5px;
-    margin-left: 5px;
+    /* margin-left: 5px; */
     border-radius: 3px;
     outline: none;
     color: #fff;
@@ -141,27 +142,6 @@ input[type="file"] {
     /* line-height: 17px; */
 }
 
-.top {
-    height: 10px;
-}
-.top h2 {
-    float: left;
-}
-.top button {
-    float: right;
-    font-size: 16px;
-    padding: 2px 5px;
-    background: white;
-    border: 1px solid black;
-}
-.top button.active {
-    float: right;
-    font-size: 16px;
-    padding: 2px 5px;
-    background: white;
-    border: 1px solid coral;
-}
-
 .add {
     margin-bottom: 10px;
 }
@@ -186,26 +166,19 @@ input[type="file"] {
     float: left;
 }
 
-.scheduler {
-    margin-top: 20px;
-}
-
-.context textarea {
-    width: calc(100% - 12px);
-    margin-bottom: 5px;
-    padding: 5px;
-    font: inherit;
-    resize: vertical;
-    /* line-height: 17px; */
-}
-
-.history {
-    margin-top: 25px;
-}
-
 .footer {
     align-items: initial;
     display: flex;
     justify-content: flex-start;
     flex-direction: row-reverse;
+}
+
+/* Apply GT America Mono to all buttons */
+button {
+    font-family: "GT America Mono", monospace;
+}
+
+/* DepartureMono utility class */
+.departure-mono {
+    font-family: "DepartureMono", monospace;
 }

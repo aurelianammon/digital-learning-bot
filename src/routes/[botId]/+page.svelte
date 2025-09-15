@@ -5,6 +5,8 @@
     import BotSettings from "$lib/components/BotSettings.svelte";
     import TaskScheduler from "$lib/components/TaskScheduler.svelte";
     import ChatHistory from "$lib/components/ChatHistory.svelte";
+    import Navigation from "$lib/components/Navigation.svelte";
+    import Context from "$lib/components/Context.svelte";
 
     let context = "";
     let botName = "assistant";
@@ -74,6 +76,7 @@
 <svelte:head>
     <title>Bot Dashboard: {botName} - AI Workshop Bot</title>
     <link rel="stylesheet" href="/css/reset.css" />
+    <link rel="stylesheet" href="/css/font.css" />
     <link rel="stylesheet" href="/css/main.css" />
 </svelte:head>
 
@@ -91,30 +94,10 @@
         </button>
     </div>
 {:else}
-    <div class="wrapper">
-        <div class="dashboard-header">
-            <button class="back-button" on:click={goBackToStart}>
-                ← Back to Start
-            </button>
-            <div class="bot-info">
-                <h1>Bot Dashboard: {botName}</h1>
-                <div class="bot-id-display">
-                    <span class="bot-id-label">Bot ID:</span>
-                    <code class="bot-id-value">{selectedBotId}</code>
-                    <button
-                        class="copy-button"
-                        on:click={() =>
-                            navigator.clipboard.writeText(selectedBotId)}
-                        title="Copy Bot ID"
-                    >
-                        📋
-                    </button>
-                </div>
-            </div>
-        </div>
-
+    <Navigation {selectedBotId} />
+    <div class="dashboard-content">
         <div class="bot-dashboard">
-            <div class="dashboard-controls">
+            <div class="settings">
                 <BotSettings
                     bind:botName
                     {selectedBotId}
@@ -123,30 +106,11 @@
                 />
             </div>
 
-            <div class="context">
-                <h3>Context of the Bot</h3>
-                <textarea
-                    bind:value={context}
-                    on:change={async () => {
-                        try {
-                            await fetch("/api/context", {
-                                method: "PUT",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                    content: context,
-                                    botId: selectedBotId,
-                                }),
-                            });
-                            handleDataUpdate();
-                        } catch (error) {
-                            console.error("Error updating context:", error);
-                        }
-                    }}
-                    cols="30"
-                    rows="10"
-                    placeholder="Enter the context and personality for this bot..."
-                ></textarea>
-            </div>
+            <Context
+                bind:context
+                {selectedBotId}
+                on:update={handleDataUpdate}
+            />
 
             <div class="scheduler">
                 <TaskScheduler {images} {videos} {selectedBotId} />
@@ -160,10 +124,6 @@
 {/if}
 
 <style>
-    .wrapper {
-        padding: 10px;
-    }
-
     .loading {
         display: flex;
         flex-direction: column;
@@ -207,23 +167,11 @@
     }
 
     .bot-dashboard {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 24px;
-        background: white;
-    }
-
-    .dashboard-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .bot-info {
-        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: auto auto;
+        gap: 10px;
+        margin: 0 auto;
     }
 
     .back-button {
@@ -241,62 +189,44 @@
         background: #5a6268;
     }
 
-    .dashboard-header h1 {
-        margin: 0 0 8px 0;
-        color: #333;
-        font-size: 1.8em;
+    .dashboard-content {
+        margin: 10px;
+        padding-top: 20px;
     }
 
-    .bot-id-display {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        padding: 8px 12px;
-        font-family: "Courier New", monospace;
+    .settings {
+        border-radius: 20px;
+        box-sizing: border-box;
+        grid-column: 1 / 3;
+        grid-row: 1;
+        overflow: hidden;
     }
 
-    .bot-id-label {
-        color: #6c757d;
+    .scheduler {
+        border-radius: 20px;
+        box-sizing: border-box;
+        grid-column: 1 / 4;
+        grid-row: 2;
+        overflow: hidden;
+    }
+
+    .history {
+        border-radius: 20px;
+        box-sizing: border-box;
+        grid-column: 4 / 7;
+        grid-row: 2;
+        overflow: hidden;
+        height: fit-content;
+    }
+
+    :global(.tile-title) {
         font-size: 14px;
-        font-weight: 500;
-    }
-
-    .bot-id-value {
-        background: #e9ecef;
-        color: #495057;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 14px;
-        font-weight: 600;
-        border: 1px solid #ced4da;
-    }
-
-    .copy-button {
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 4px 8px;
-        cursor: pointer;
-        font-size: 12px;
-        transition: background-color 0.2s;
-    }
-
-    .copy-button:hover {
-        background: #0056b3;
-    }
-
-    .dashboard-controls {
-        margin-bottom: 24px;
-    }
-
-    .context h3,
-    .scheduler h3,
-    .history h3 {
-        color: #555;
-        margin-bottom: 12px;
+        border: 1px solid black;
+        border-radius: 20px;
+        padding: 0 14px;
+        height: 40px;
+        line-height: 38px;
+        width: fit-content;
+        margin-bottom: 10px;
     }
 </style>

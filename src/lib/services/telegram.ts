@@ -205,10 +205,7 @@ export async function initializeTelegramBot() {
                     try {
                         const messages = await db.message.findMany({
                             where: {
-                                OR: [
-                                    { botId: linkedBot.id },
-                                    { botId: null }, // Include legacy messages
-                                ],
+                                OR: [{ botId: linkedBot.id }],
                             },
                             orderBy: { createdAt: "asc" },
                             take: 100,
