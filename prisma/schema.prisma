@@ -23,8 +23,12 @@ model Job {
   message   String
   date      DateTime
   state     Boolean  @default(true)
+  botId     String?  // Optional bot relationship
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  bot Bot? @relation(fields: [botId], references: [id], onDelete: SetNull)
 
   @@map("jobs")
 }
@@ -33,17 +37,15 @@ model Message {
   id        String   @id @default(cuid())
   role      String   // "user" or "assistant"
   content   String
+  botId     String?  // Optional bot relationship
   createdAt DateTime @default(now())
+
+  // Relations
+  bot Bot? @relation(fields: [botId], references: [id], onDelete: SetNull)
 
   @@map("messages")
 }
 
-model Context {
-  id      String @id @default(cuid())
-  content String
-
-  @@map("context")
-}
 
 model File {
   id        String   @id @default(cuid())
@@ -55,11 +57,32 @@ model File {
   @@map("files")
 }
 
-model BotSettings {
-  id          String @id @default(cuid())
-  name        String @default("assistant")
-  conversation String? // Telegram chat ID
-  updatedAt   DateTime @updatedAt
+model Bot {
+  id          String   @id @default(cuid())
+  name        String   @default("assistant")
+  openaiKey   String?  // OpenAI API key
+  context     String?  // Bot-specific context/personality
+  isActive    Boolean  @default(true)
+  // Single chat per bot
+  linkedChatId String? @unique // Telegram chat ID
+  linkedAt     DateTime? // When the chat was linked
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  @@map("bot_settings")
+  // Relations
+  jobs        Job[]
+  messages    Message[]
+
+  @@map("bots")
 }
+
+model PendingLink {
+  id      String   @id @default(cuid())
+  chatId  String   // Telegram chat ID
+  pin     String   // 6-digit PIN
+  expiresAt DateTime // PIN expiration time
+  createdAt DateTime @default(now())
+
+  @@map("pending_links")
+}
+

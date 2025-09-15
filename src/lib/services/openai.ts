@@ -6,14 +6,23 @@ const openai = new OpenAI({
 });
 
 export async function createChatCompletion(
-    messages: Array<{ role: string; content: string }>
+    messages: Array<{ role: string; content: string }>,
+    botId?: string
 ) {
     try {
-        // Get context from database
-        const contextRecord = await db.context.findFirst();
-        const context = contextRecord
-            ? [{ role: "system" as const, content: contextRecord.content }]
-            : [];
+        // Get bot-specific context from database
+        let context: Array<{ role: "system"; content: string }> = [];
+
+        if (botId) {
+            const bot = await db.bot.findUnique({
+                where: { id: botId },
+                select: { context: true },
+            });
+
+            if (bot?.context) {
+                context = [{ role: "system" as const, content: bot.context }];
+            }
+        }
 
         const chat = await openai.chat.completions.create({
             model: "gpt-4-1106-preview",

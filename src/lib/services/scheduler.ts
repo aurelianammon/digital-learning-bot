@@ -192,15 +192,48 @@ async function executeJob(
             return;
         }
 
-        const settings = await db.botSettings.findFirst();
-        const conversationId = settings?.conversation;
+        // Get the bot associated with this job
+        let conversationId: string | null = null;
 
-        if (!conversationId) {
-            console.error("❌ No conversation ID set for job execution");
-            console.error(
-                "💡 Use /link command in Telegram to set the conversation ID"
-            );
-            return;
+        if (job.botId) {
+            const bot = await db.bot.findUnique({
+                where: { id: job.botId },
+                select: { linkedChatId: true, name: true },
+            });
+            conversationId = bot?.linkedChatId || null;
+
+            if (!conversationId) {
+                console.error(
+                    `❌ Bot "${
+                        bot?.name || "Unknown"
+                    }" has no linked chat for job execution`
+                );
+                console.error(
+                    "💡 Use /link command in Telegram to link a chat to this bot"
+                );
+                return;
+            }
+        } else {
+            // Legacy job without botId - try to find any bot with a linked chat
+            const anyBotWithChat = await db.bot.findFirst({
+                where: {
+                    linkedChatId: { not: null },
+                    isActive: true,
+                },
+                select: { linkedChatId: true, name: true },
+            });
+
+            conversationId = anyBotWithChat?.linkedChatId || null;
+
+            if (!conversationId) {
+                console.error(
+                    "❌ No bot has a linked chat for legacy job execution"
+                );
+                console.error(
+                    "💡 Create and link a bot to a chat to execute jobs"
+                );
+                return;
+            }
         }
 
         console.log(

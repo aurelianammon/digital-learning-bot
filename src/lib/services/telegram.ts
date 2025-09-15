@@ -33,8 +33,15 @@ export async function initializeTelegramBot() {
 
     // Help command
     bot.command("help", async (ctx) => {
-        const settings = await db.botSettings.findFirst();
-        const botName = settings?.name || "assistant";
+        // Find which bot this chat is linked to
+        const linkedBot = await db.bot.findFirst({
+            where: {
+                linkedChatId: String(ctx.chat.id),
+                isActive: true,
+            },
+        });
+
+        const botName = linkedBot?.name || "assistant";
 
         const text = `${botName} ist ein AI-gesteuerten ChatBot, welcher speziell für «AI Encounter» entwickelt wurde, um auf persönliche und einladende Weise Wissen zu vermitteln. Im hintergrund werden ChatGTP und ähnliche Technologien benutzt. Um mit ${botName} in ein Gespräch einzusteigen, genügt es, ${botName} direkt anzusprechen. Ähnlich wie bei vielen KI-Systemen sind nicht alle Potenziale von Beginn an offensichtlich. Deshalb ermutigen wir dazu, verschiedene Ansätze auszuprobieren und aktiv mit ${botName} in Interaktion zu treten, um die vielfältigen Möglichkeiten zu entdecken, die es zu bieten hat. \n\nEntwickelt und umgesetzt vom Designstudio [alles-negativ](alles-negativ.ch).`;
 
@@ -44,21 +51,80 @@ export async function initializeTelegramBot() {
     });
 
     bot.command("link", async (ctx) => {
-        // Update or create bot settings with the chat.id as conversation
-        await db.botSettings.upsert({
-            where: { id: "cmfgscz4500014s1z9bjyfbwf" },
-            update: { conversation: String(ctx.chat.id) },
-            create: { conversation: String(ctx.chat.id) },
-        });
+        try {
+            // Generate a 6-digit PIN
+            const pin = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date();
+            expiresAt.setMinutes(expiresAt.getMinutes() + 15); // PIN expires in 15 minutes
 
-        await ctx.reply(`Linked to conversation: ${ctx.chat.id}`);
+            // Check if this chat is already linked to any bot
+            const existingBot = await db.bot.findFirst({
+                where: {
+                    linkedChatId: String(ctx.chat.id),
+                    isActive: true,
+                },
+            });
+
+            if (existingBot) {
+                await ctx.reply(
+                    `This chat is already linked to bot "${existingBot.name}"!\n\nTo link to a different bot, first unlink this chat in the backend interface.`
+                );
+                return;
+            }
+
+            // Remove any existing pending links for this chat (from any bot)
+            await db.pendingLink.deleteMany({
+                where: {
+                    chatId: String(ctx.chat.id),
+                },
+            });
+
+            // Create new bot-agnostic pending link
+            await db.pendingLink.create({
+                data: {
+                    chatId: String(ctx.chat.id),
+                    pin,
+                    expiresAt,
+                },
+            });
+
+            await ctx.reply(
+                `🔗 Link Request Generated!\n\n` +
+                    `PIN: \`${pin}\`\n` +
+                    `Chat ID: \`${ctx.chat.id}\`\n\n` +
+                    `An admin must enter this PIN in the backend interface of the bot they want to link to this chat.\n` +
+                    `This PIN will expire in 15 minutes.`,
+                { parse_mode: "Markdown" }
+            );
+        } catch (error) {
+            console.error("Error generating link PIN:", error);
+            await ctx.reply(
+                "Sorry, I had trouble generating the link PIN. Please try again."
+            );
+        }
     });
 
     // Stats command
     bot.command("stats", async (ctx) => {
-        const settings = await db.botSettings.findFirst();
-        const conversation = settings?.conversation || "Not set";
-        await ctx.reply(`Active conversation: ${conversation}`);
+        // Find which bot this chat is linked to
+        const linkedBot = await db.bot.findFirst({
+            where: {
+                linkedChatId: String(ctx.chat.id),
+                isActive: true,
+            },
+        });
+
+        if (linkedBot) {
+            await ctx.reply(
+                `Bot: ${linkedBot.name}\nChat ID: ${ctx.chat.id}\nLinked at: ${
+                    linkedBot.linkedAt?.toLocaleString() || "Unknown"
+                }`
+            );
+        } else {
+            await ctx.reply(
+                `This chat is not linked to any bot. Use /link to connect.`
+            );
+        }
     });
 
     // Handle image generation requests
@@ -76,57 +142,24 @@ export async function initializeTelegramBot() {
         }
     });
 
-    // Handle messages mentioning the bot
-    const botName = await getBotName();
-    bot.hears(new RegExp(`\\b(${botName})\\b`, "i"), async (ctx) => {
-        await ctx.sendChatAction("typing");
-
-        try {
-            const messages = await db.message.findMany({
-                orderBy: { createdAt: "asc" },
-                take: 100,
-            });
-
-            const formattedMessages = messages.map((msg) => ({
-                role: msg.role,
-                content: msg.content,
-            }));
-
-            formattedMessages.push({
-                role: "user",
-                content: `${ctx.message.from.first_name}: ${ctx.message.text}`,
-            });
-
-            const completion = await createChatCompletion(formattedMessages);
-
-            // Save messages to database
-            await db.message.createMany({
-                data: [
-                    {
-                        role: "user",
-                        content: `${ctx.message.from.first_name}: ${ctx.message.text}`,
-                    },
-                    {
-                        role: "assistant",
-                        content:
-                            completion ||
-                            "Sorry, I could not generate a response.",
-                    },
-                ],
-            });
-
-            await ctx.reply(
-                completion || "Sorry, I could not generate a response."
-            );
-        } catch (error) {
-            console.error("Error processing message:", error);
-            await ctx.reply("Sorry, I had trouble processing your message.");
-        }
-    });
-
     // Handle all other messages
     bot.on("message", async (ctx) => {
+        console.log("message", ctx.message);
         try {
+            // Find which bot this chat is linked to
+            const linkedBot = await db.bot.findFirst({
+                where: {
+                    linkedChatId: String(ctx.chat.id),
+                    isActive: true,
+                },
+            });
+
+            // If no bot is linked to this chat, ignore the message
+            if (!linkedBot) {
+                console.log("No bot linked to this chat, ignoring message");
+                return;
+            }
+
             // Handle images
             if ("photo" in ctx.message && ctx.message.photo) {
                 const photo = ctx.message.photo[ctx.message.photo.length - 1];
@@ -137,6 +170,7 @@ export async function initializeTelegramBot() {
                     data: {
                         role: "user",
                         content: `image_description: ${caption}`,
+                        botId: linkedBot?.id || null,
                     },
                 });
 
@@ -145,16 +179,73 @@ export async function initializeTelegramBot() {
                         data: {
                             role: "user",
                             content: `${ctx.message.from.first_name}: ${ctx.message.caption}`,
+                            botId: linkedBot?.id || null,
                         },
                     });
                 }
             } else if ("text" in ctx.message && ctx.message.text) {
+                // Save the user message
                 await db.message.create({
                     data: {
                         role: "user",
                         content: `${ctx.message.from.first_name}: ${ctx.message.text}`,
+                        botId: linkedBot?.id || null,
                     },
                 });
+
+                // Check if the message mentions the bot name and generate AI response
+                if (
+                    linkedBot &&
+                    new RegExp(`\\b(${linkedBot.name})\\b`, "i").test(
+                        ctx.message.text
+                    )
+                ) {
+                    await ctx.sendChatAction("typing");
+
+                    try {
+                        const messages = await db.message.findMany({
+                            where: {
+                                OR: [
+                                    { botId: linkedBot.id },
+                                    { botId: null }, // Include legacy messages
+                                ],
+                            },
+                            orderBy: { createdAt: "asc" },
+                            take: 100,
+                        });
+
+                        const formattedMessages = messages.map((msg) => ({
+                            role: msg.role,
+                            content: msg.content,
+                        }));
+
+                        const completion = await createChatCompletion(
+                            formattedMessages,
+                            linkedBot.id
+                        );
+
+                        // Save the assistant response
+                        await db.message.create({
+                            data: {
+                                role: "assistant",
+                                content:
+                                    completion ||
+                                    "Sorry, I could not generate a response.",
+                                botId: linkedBot.id,
+                            },
+                        });
+
+                        await ctx.reply(
+                            completion ||
+                                "Sorry, I could not generate a response."
+                        );
+                    } catch (error) {
+                        console.error("Error generating AI response:", error);
+                        await ctx.reply(
+                            "Sorry, I had trouble processing your message."
+                        );
+                    }
+                }
             }
         } catch (error) {
             console.error("Error saving message:", error);
@@ -198,11 +289,6 @@ export async function initializeTelegramBot() {
         console.log("\n🛑 Received SIGTERM, shutting down gracefully...");
         await gracefulShutdown();
     });
-}
-
-async function getBotName(): Promise<string> {
-    const settings = await db.botSettings.findFirst();
-    return settings?.name || "assistant";
 }
 
 export function stopTelegramBot() {
