@@ -13,16 +13,7 @@ if (process.env.NODE_ENV !== "production") {
 // Initialize default data
 export async function initializeDatabase() {
     try {
-        // Check if context exists, if not create default
-        const contextExists = await db.context.findFirst();
-        if (!contextExists) {
-            await db.context.create({
-                data: {
-                    content: "Define bot context here",
-                },
-            });
-        }
-
+        // Database initialization can be added here if needed
         console.log("Database initialized successfully");
     } catch (error) {
         console.error("Error initializing database:", error);
