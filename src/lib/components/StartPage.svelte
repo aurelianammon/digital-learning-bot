@@ -230,7 +230,7 @@
     .access-section h2,
     .create-section h2 {
         margin: 0 0 5px 0;
-        color: #444;
+        color: #000000;
         font-size: 1.3em;
         font-weight: 500;
     }
