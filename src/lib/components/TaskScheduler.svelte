@@ -197,40 +197,46 @@
     </div>
 
     <div class="jobs">
-        {#each filteredJobs as job (job.id)}
-            <div
-                class="job"
-                class:inactive={!job.state}
-                class:error={job.error}
-            >
-                <div class="header">
-                    <div class="date">
-                        {new Date(job.date).toLocaleString("de-CH", {
-                            timeZone: "Europe/Zurich",
-                        })}
+        {#if loading}
+            <div class="loading">Loading jobs...</div>
+        {:else if filteredJobs.length === 0}
+            <div class="no-jobs">No jobs to display</div>
+        {:else}
+            {#each filteredJobs as job (job.id)}
+                <div
+                    class="job"
+                    class:inactive={!job.state}
+                    class:error={job.error}
+                >
+                    <div class="header">
+                        <div class="date">
+                            {new Date(job.date).toLocaleString("de-CH", {
+                                timeZone: "Europe/Zurich",
+                            })}
+                        </div>
+                        <div class="type">
+                            {job.type}
+                        </div>
+                        <div class="type">
+                            {#if job.error}
+                                <span
+                                    class="error-indicator"
+                                    title="Task is overdue but still active"
+                                    >NOT EXECUTED</span
+                                >
+                            {/if}
+                        </div>
+                        <button
+                            class="controll_button"
+                            on:click={() => removeJob(job.id)}>×</button
+                        >
                     </div>
-                    <div class="type">
-                        {job.type}
+                    <div class="message">
+                        {@html job.message}
                     </div>
-                    <div class="type">
-                        {#if job.error}
-                            <span
-                                class="error-indicator"
-                                title="Task is overdue but still active"
-                                >NOT EXECUTED</span
-                            >
-                        {/if}
-                    </div>
-                    <button
-                        class="controll_button"
-                        on:click={() => removeJob(job.id)}>×</button
-                    >
                 </div>
-                <div class="message">
-                    {@html job.message}
-                </div>
-            </div>
-        {/each}
+            {/each}
+        {/if}
     </div>
 </div>
 
@@ -347,6 +353,20 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: #000000;
+        font-style: normal;
+    }
+
+    .no-jobs {
+        text-align: center;
+        padding: 20px;
+        color: #000000;
+        font-style: normal;
     }
 
     .top {

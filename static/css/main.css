@@ -110,3 +110,8 @@ button {
 .departure-mono {
     font-family: "DepartureMono", monospace;
 }
+
+.bot-id {
+    text-align: center;
+    font-weight: bold;
+}

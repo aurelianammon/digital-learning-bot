@@ -174,15 +174,15 @@
     .loading {
         text-align: center;
         padding: 20px;
-        color: #666;
-        font-style: italic;
+        color: #000000;
+        font-style: normal;
     }
 
     .no-messages {
         text-align: center;
         padding: 20px;
-        color: #999;
-        font-style: italic;
+        color: #000000;
+        font-style: normal;
     }
 
     .new-message-indicator {

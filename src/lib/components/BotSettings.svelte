@@ -1,5 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
+    import { goto } from "$app/navigation";
 
     export let botName: string = "assistant";
     export let selectedBotId: string = "";
@@ -121,7 +122,7 @@
                 alert(result.message || "Bot deleted successfully!");
                 showDeleteConfirm = false;
                 // Trigger a refresh/redirect since the bot no longer exists
-                window.location.reload();
+                goto("/");
             } else {
                 const error = await response.json();
                 alert(`Failed to delete bot: ${error.error}`);
@@ -154,9 +155,9 @@
         <div class="setting-section">
             <div class="section-header">
                 {#if openaiKey}
-                    <label class="section-label">API Configuration ✔️</label>
+                    <label class="section-label">OpenAI Configuration ✔️</label>
                 {:else}
-                    <label class="section-label">API Configuration</label>
+                    <label class="section-label">OpenAI Configuration</label>
                 {/if}
                 <button
                     class="toggle-button"

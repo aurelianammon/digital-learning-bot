@@ -13,3 +13,11 @@
     font-style: normal;
     font-display: swap;
 }
+
+@font-face {
+    font-family: "GT America Mono";
+    src: url("/font/GT America Mono Bold.otf") format("opentype");
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}

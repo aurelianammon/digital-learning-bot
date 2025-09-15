@@ -1,11 +1,65 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
+    import { onMount, onDestroy } from "svelte";
 
     let botIdInput = "";
     let newBotName = "";
     let isCreating = false;
     let errorMessage = "";
     let successMessage = "";
+    let startPageElement: HTMLElement;
+    let animationId: number;
+
+    // Gradient animation variables
+    let hue = 0;
+    let angle = 0;
+    let colorIndex = 0;
+    const colors = [
+        "#ff6b6b",
+        "#4ecdc4",
+        "#45b7d1",
+        "#96ceb4",
+        "#feca57",
+        "#ff9ff3",
+        "#54a0ff",
+        "#a55eea",
+    ];
+
+    function animateGradient() {
+        // Increment hue for color cycling
+        hue = (hue + 0.5) % 360;
+
+        // Increment angle for orientation changes
+        angle = (angle + 0.3) % 360;
+
+        // Cycle through color index for additional variation
+        colorIndex = (colorIndex + 0.1) % colors.length;
+
+        // Create dynamic gradient
+        const color1 = `hsl(${hue}, 70%, 60%)`;
+        const color2 = `hsl(${(hue + 120) % 360}, 70%, 60%)`;
+        const color3 = `hsl(${(hue + 240) % 360}, 70%, 60%)`;
+
+        // Apply the gradient
+        if (startPageElement) {
+            startPageElement.style.background = `linear-gradient(${angle}deg, ${color1}, ${color2}, ${color3})`;
+        }
+
+        // Continue animation
+        animationId = requestAnimationFrame(animateGradient);
+    }
+
+    onMount(() => {
+        if (startPageElement) {
+            animateGradient();
+        }
+    });
+
+    onDestroy(() => {
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
+    });
 
     async function accessBot() {
         if (!botIdInput.trim()) {
@@ -47,12 +101,12 @@
 
             if (response.ok) {
                 const newBot = await response.json();
-                successMessage = `Bot "${newBot.name}" created successfully! Bot ID: ${newBot.id}\n\nClick "Access Bot" above to enter this ID and access your bot.`;
+                successMessage = `Bot "${newBot.name}" created successfully! Your bot ID is:<br><br><div class="bot-id">${newBot.id}</div><br>Important: Save this ID now! You will lose access to your bot if you don't save it.<br><br>You can now use this ID to access your bot dashboard.`;
                 newBotName = "";
                 // Auto-navigate to the new bot after creation
-                setTimeout(() => {
-                    goto(`/${newBot.id}`);
-                }, 2000);
+                // setTimeout(() => {
+                //     goto(`/${newBot.id}`);
+                // }, 2000);
             } else {
                 const error = await response.json();
                 errorMessage = `Failed to create bot: ${error.error}`;
@@ -76,10 +130,9 @@
     }
 </script>
 
-<div class="start-page">
+<div class="start-page" bind:this={startPageElement}>
     <div class="start-container">
-        <h1>🤖 AI Workshop Bot</h1>
-        <p class="subtitle">Enter your bot ID to access your bot dashboard</p>
+        <h3 class="tile-title">Digital Learning Assistant</h3>
 
         <div class="access-section">
             <h2>Access Existing Bot</h2>
@@ -136,7 +189,7 @@
 
         {#if successMessage}
             <div class="success-message">
-                {successMessage}
+                {@html successMessage}
             </div>
         {/if}
     </div>
@@ -148,66 +201,65 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+        transition: background 0.1s ease;
         /* padding: 20px; */
+    }
+
+    .tile-title {
+        font-size: 14px;
+        border: 1px solid black;
+        border-radius: 20px;
+        padding: 0 14px;
+        height: 38px;
+        line-height: 37px;
+        width: fit-content;
+        margin-bottom: 30px;
     }
 
     .start-container {
         background: white;
-        border-radius: 12px;
-        padding: 40px;
+        border-radius: 20px;
+        padding: 10px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         max-width: 500px;
-        width: 100%;
-        text-align: center;
-    }
-
-    h1 {
-        margin: 0 0 8px 0;
-        color: #333;
-        font-size: 2.5em;
-        font-weight: 300;
-    }
-
-    .subtitle {
-        color: #666;
-        margin: 0 0 40px 0;
-        font-size: 1.1em;
-    }
-
-    .access-section,
-    .create-section {
-        margin-bottom: 30px;
+        width: calc(100% - 40px);
+        /* text-align: center; */
     }
 
     .access-section h2,
     .create-section h2 {
-        margin: 0 0 8px 0;
+        margin: 0 0 5px 0;
         color: #444;
         font-size: 1.3em;
         font-weight: 500;
     }
 
+    .create-section h2 {
+        margin: 0 0 10px 0;
+    }
+
     .instruction {
-        margin: 0 0 16px 0;
-        color: #666;
+        margin: 0 0 10px 0;
+        color: black;
         font-size: 14px;
-        font-style: italic;
+        /* font-style: italic; */
     }
 
     .input-group {
         display: flex;
-        gap: 12px;
-        margin-bottom: 16px;
+        gap: 10px;
+        /* margin-bottom: 16px; */
     }
 
     .bot-id-input,
     .bot-name-input {
         flex: 1;
-        padding: 12px 16px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        font-size: 16px;
+        padding: 8px;
+        border: 1px solid black;
+        border-radius: 6px;
+        font-size: 14px;
+        height: 22px;
         transition: border-color 0.2s;
     }
 
@@ -219,11 +271,10 @@
 
     .access-button,
     .create-button {
-        padding: 12px 24px;
+        padding: 8px;
         border: none;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 500;
+        border-radius: 6px;
+        font-size: 14px;
         cursor: pointer;
         transition: all 0.2s;
         white-space: nowrap;
@@ -259,24 +310,14 @@
 
     .divider {
         position: relative;
-        margin: 30px 0;
-        text-align: center;
-    }
-
-    .divider::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: #ddd;
+        margin: 20px 0;
+        /* text-align: center; */
     }
 
     .divider span {
         background: white;
-        padding: 0 20px;
-        color: #666;
+        padding: 0 0px;
+        color: black;
         font-size: 14px;
     }
 
@@ -296,7 +337,12 @@
         border: 1px solid #c3e6cb;
         border-radius: 6px;
         padding: 12px;
-        margin-top: 16px;
+        margin-top: 10px;
         font-size: 14px;
+        line-height: 1.3;
+    }
+
+    h2 {
+        font-style: normal;
     }
 </style>

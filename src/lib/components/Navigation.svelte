@@ -10,7 +10,10 @@
 
 <nav class="navigation">
     <div class="nav-content">
-        <h1 class="nav-title">Digital Learning Bot</h1>
+        <h1 class="nav-title">
+            <span class="full-title">Digital Learning Assistant</span>
+            <span class="short-title">D.L.A.</span>
+        </h1>
         <div class="buttons">
             <button
                 class="nav-button id-button"
@@ -48,6 +51,15 @@
         color: white;
         font-size: 20px;
         font-style: normal;
+        font-weight: normal;
+    }
+
+    .short-title {
+        display: none;
+    }
+
+    .full-title {
+        display: inline;
     }
 
     .nav-button {
@@ -84,6 +96,14 @@
     /* Mobile responsive styles */
     @media (max-width: 768px) {
         .id-button {
+            display: none;
+        }
+
+        .short-title {
+            display: inline;
+        }
+
+        .full-title {
             display: none;
         }
     }
