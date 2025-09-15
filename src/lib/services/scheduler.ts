@@ -95,9 +95,9 @@ async function checkForNewJobs() {
                     console.log(`📅 Found new job ${job.id}, scheduling...`);
                     scheduleJob(job);
                 } else {
-                    console.log(
-                        `⏰ Job ${job.id} scheduled time has passed (${job.date}), skipping...`
-                    );
+                    // console.log(
+                    //     `⏰ Job ${job.id} scheduled time has passed (${job.date}), skipping...`
+                    // );
                 }
             }
         }
