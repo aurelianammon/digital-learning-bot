@@ -1,7 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
-
-    const dispatch = createEventDispatcher();
+    import { goto } from "$app/navigation";
 
     let botIdInput = "";
     let newBotName = "";
@@ -19,8 +17,9 @@
             const response = await fetch(`/api/bots/${botIdInput.trim()}`);
             if (response.ok) {
                 const bot = await response.json();
-                dispatch("botAccessed", { botId: botIdInput.trim(), bot });
                 errorMessage = "";
+                // Navigate to the bot route
+                goto(`/${botIdInput.trim()}`);
             } else {
                 errorMessage = "Bot not found. Please check the bot ID.";
             }
@@ -50,6 +49,10 @@
                 const newBot = await response.json();
                 successMessage = `Bot "${newBot.name}" created successfully! Bot ID: ${newBot.id}\n\nClick "Access Bot" above to enter this ID and access your bot.`;
                 newBotName = "";
+                // Auto-navigate to the new bot after creation
+                setTimeout(() => {
+                    goto(`/${newBot.id}`);
+                }, 2000);
             } else {
                 const error = await response.json();
                 errorMessage = `Failed to create bot: ${error.error}`;

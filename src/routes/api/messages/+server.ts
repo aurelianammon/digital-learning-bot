@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
         const messages = await db.message.findMany({
             where: whereClause,
-            orderBy: { createdAt: "asc" },
+            orderBy: { createdAt: "desc" },
         });
         return json(messages);
     } catch (error) {

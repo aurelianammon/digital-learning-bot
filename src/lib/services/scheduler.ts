@@ -89,8 +89,16 @@ async function checkForNewJobs() {
         // Check which jobs are not yet scheduled
         for (const job of allActiveJobs) {
             if (!scheduledJobs.has(job.id)) {
-                console.log(`📅 Found new job ${job.id}, scheduling...`);
-                scheduleJob(job);
+                // Only schedule if the job's time hasn't passed yet
+                const now = new Date();
+                if (job.date > now) {
+                    console.log(`📅 Found new job ${job.id}, scheduling...`);
+                    scheduleJob(job);
+                } else {
+                    console.log(
+                        `⏰ Job ${job.id} scheduled time has passed (${job.date}), skipping...`
+                    );
+                }
             }
         }
 
