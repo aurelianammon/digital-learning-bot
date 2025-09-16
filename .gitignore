@@ -24,3 +24,10 @@ vite.config.ts.timestamp-*
 
 # Bot process lock
 .bot-lock
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+prisma/dev.db

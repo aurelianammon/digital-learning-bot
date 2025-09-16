@@ -41,9 +41,9 @@ A modern AI-powered Telegram bot built with SvelteKit, Prisma, and SQLite. This 
    ```
 
 2. **Set up environment variables**:
-   Copy the `.env` file and add your API keys:
+   Create a `.env` file and add your API keys:
    ```bash
-   # Database
+   # Database (will be created automatically)
    DATABASE_URL="file:./dev.db"
 
    # Telegram Bot
@@ -61,6 +61,7 @@ A modern AI-powered Telegram bot built with SvelteKit, Prisma, and SQLite. This 
    bunx prisma generate
    bunx prisma db push
    ```
+   This will create the SQLite database file automatically.
 
 4. **Start the development server**:
    ```bash
