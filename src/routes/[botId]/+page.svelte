@@ -77,7 +77,7 @@
 </script>
 
 <svelte:head>
-    <title>Bot Dashboard: {botName} - AI Workshop Bot</title>
+    <title>Digital Learning Assistant - {botName}</title>
     <link rel="stylesheet" href="/css/reset.css" />
     <link rel="stylesheet" href="/css/font.css" />
     <link rel="stylesheet" href="/css/main.css" />

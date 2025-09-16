@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-    <title>AI Workshop Bot - Backend Interface</title>
+    <title>Digital Learning Assistant</title>
     <link rel="stylesheet" href="/css/reset.css" />
     <link rel="stylesheet" href="/css/font.css" />
     <link rel="stylesheet" href="/css/main.css" />
