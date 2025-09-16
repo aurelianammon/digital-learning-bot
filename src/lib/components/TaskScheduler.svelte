@@ -16,6 +16,23 @@
     let isInitialLoad = true;
     let showAddTaskPopup = false;
 
+    // Function to refresh file list without reloading the entire page
+    async function refreshFileList(selectFilename?: string) {
+        try {
+            const filesResponse = await fetch("/api/files");
+            const files = await filesResponse.json();
+            images = files.images;
+            videos = files.videos;
+
+            // Auto-select the newly uploaded file if provided
+            if (selectFilename) {
+                text = selectFilename;
+            }
+        } catch (error) {
+            console.error("Error refreshing file list:", error);
+        }
+    }
+
     // Task creation variables
     let type: "TEXT" | "IMAGE" | "VIDEO" | "PROMPT" = "TEXT";
     let text = "";
@@ -198,7 +215,7 @@
             console.log("Upload successful:", result);
 
             fileInput.value = "";
-            dispatch("update");
+            await refreshFileList(result.file.filename);
         } catch (error) {
             console.error("Error uploading file:", error);
             alert(
