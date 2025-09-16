@@ -21,9 +21,12 @@
         }
 
         try {
-            const response = await fetch(
-                `/api/messages?botId=${selectedBotId}`
-            );
+            const response = await fetch("/api/messages", {
+                headers: {
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
+            });
             const newMessages = await response.json();
 
             // Only update if messages actually changed
@@ -93,6 +96,10 @@
         try {
             await fetch(`/api/messages/${messageId}`, {
                 method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
             });
             // Reload messages after removing
             await loadMessages(false);

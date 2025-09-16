@@ -2,28 +2,6 @@ import { json } from "@sveltejs/kit";
 import { db } from "$lib/database.js";
 import type { RequestHandler } from "./$types";
 
-// GET - List all bots
-export const GET: RequestHandler = async () => {
-    try {
-        const bots = await db.bot.findMany({
-            include: {
-                _count: {
-                    select: {
-                        jobs: true,
-                        messages: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: "desc" },
-        });
-
-        return json(bots);
-    } catch (error) {
-        console.error("Error fetching bots:", error);
-        return json({ error: "Failed to fetch bots" }, { status: 500 });
-    }
-};
-
 // POST - Create a new bot
 export const POST: RequestHandler = async ({ request }) => {
     try {

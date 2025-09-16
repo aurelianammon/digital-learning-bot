@@ -43,7 +43,12 @@
         }
 
         try {
-            const response = await fetch(`/api/jobs?botId=${selectedBotId}`);
+            const response = await fetch("/api/jobs", {
+                headers: {
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
+            });
             const newJobs = await response.json();
 
             // Only update if jobs actually changed
@@ -132,12 +137,15 @@
 
             await fetch("/api/jobs", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
                 body: JSON.stringify({
                     type,
                     message,
                     date: new Date(date).toISOString(),
-                    botId: selectedBotId || null,
                 }),
             });
 
@@ -154,6 +162,10 @@
         try {
             await fetch(`/api/jobs/${jobId}`, {
                 method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
             });
             // Reload jobs after removing
             await loadJobs(false);

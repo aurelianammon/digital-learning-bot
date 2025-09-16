@@ -10,10 +10,13 @@
         try {
             await fetch("/api/context", {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
                 body: JSON.stringify({
                     content: context,
-                    botId: selectedBotId,
                 }),
             });
             dispatch("update");

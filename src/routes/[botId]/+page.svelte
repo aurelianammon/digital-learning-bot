@@ -51,9 +51,12 @@
             // Jobs and messages are now loaded by their respective components
 
             // Load context for the selected bot
-            const contextResponse = await fetch(
-                `/api/context?botId=${selectedBotId}`
-            );
+            const contextResponse = await fetch("/api/context", {
+                headers: {
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
+            });
             context = await contextResponse.json();
         } catch (error) {
             console.error("Error loading bot data:", error);
