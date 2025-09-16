@@ -401,7 +401,7 @@
     >
         <div class="popup-content" on:click|stopPropagation>
             <div class="popup-header">
-                <h3>Add New Task</h3>
+                <h3 class="tile-title">Add New Task</h3>
                 <button class="close-button" on:click={closeAddTaskPopup}
                     >×</button
                 >
@@ -411,19 +411,19 @@
                 <div class="task-buttons">
                     <button
                         class:active={type === "VIDEO"}
-                        on:click={() => (type = "VIDEO")}>📹</button
+                        on:click={() => (type = "VIDEO")}>Video</button
                     >
                     <button
                         class:active={type === "IMAGE"}
-                        on:click={() => (type = "IMAGE")}>📷</button
+                        on:click={() => (type = "IMAGE")}>Image</button
                     >
                     <button
                         class:active={type === "TEXT"}
-                        on:click={() => (type = "TEXT")}>🗞️</button
+                        on:click={() => (type = "TEXT")}>Text</button
                     >
                     <button
                         class:active={type === "PROMPT"}
-                        on:click={() => (type = "PROMPT")}>🤖</button
+                        on:click={() => (type = "PROMPT")}>Prompt</button
                     >
                 </div>
 
@@ -554,21 +554,22 @@
     .task-buttons {
         display: flex;
         gap: 10px;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
 
     .task-buttons button {
         border: 1px solid black;
-        border-radius: 20px;
-        padding: 0 14px;
-        background: black;
-        color: white;
+        border-radius: 8px;
+        padding: 7px 14px;
+        background: white;
+        color: black;
         cursor: pointer;
         font-family: "GT America Mono", monospace;
+        font-size: 14px;
     }
 
     .task-buttons button.active {
-        background-color: #4caf50;
+        background-color: black;
         color: white;
     }
 
@@ -677,26 +678,28 @@
 
     /* Form styles moved from main.css */
     .add {
-        margin-bottom: 10px;
+        margin-bottom: 0px;
     }
 
     .add textarea {
-        width: calc(100% - 12px);
+        width: calc(100% - 25px);
         margin-bottom: 5px;
-        padding: 5px;
+        padding: 12px;
         font: inherit;
         resize: vertical;
-        border: 1px solid #ccc;
-        border-radius: 3px;
+        border: 1px solid #000000;
+        border-radius: 8px;
+        font-size: 14px;
     }
 
     .add input {
         font: inherit;
-        width: calc(100% - 12px);
-        margin-bottom: 10px;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
+        width: calc(100% - 24px);
+        margin-bottom: 0px;
+        padding: 12px;
+        border: 1px solid #000000;
+        border-radius: 8px;
+        font-size: 14px;
     }
 
     .custom-file-upload {
@@ -790,7 +793,7 @@
 
     .popup-content {
         background: white;
-        border-radius: 8px;
+        border-radius: 20px;
         width: 90%;
         max-width: 500px;
         max-height: 80vh;
@@ -802,21 +805,22 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px;
-        border-bottom: 1px solid #eee;
+        padding: 10px;
+        /* border-bottom: 1px solid #eee; */
     }
 
     .popup-header h3 {
         margin: 0;
-        color: #333;
+        /* color: #333; */
     }
 
     .close-button {
+        position: relative;
         background: none;
         border: none;
         font-size: 24px;
         cursor: pointer;
-        color: #666;
+        color: black;
         padding: 0;
         width: 30px;
         height: 30px;
@@ -824,22 +828,26 @@
         align-items: center;
         justify-content: center;
         border-radius: 50%;
+        right: -2px;
+        top: -7px;
+        padding-bottom: 3px;
     }
 
     .close-button:hover {
-        background: #f0f0f0;
+        background: black;
+        color: white;
     }
 
     .popup-body {
-        padding: 20px;
+        padding: 10px;
     }
 
     .popup-footer {
         display: flex;
         justify-content: flex-end;
         gap: 10px;
-        padding: 20px;
-        border-top: 1px solid #eee;
+        padding: 10px;
+        /* border-top: 1px solid #eee; */
     }
 
     .cancel-button {
