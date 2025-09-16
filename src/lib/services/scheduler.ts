@@ -175,6 +175,7 @@ async function executeJob(
         type: string;
         message: string;
         date: Date;
+        botId?: string | null;
     },
     botInstanceParam: BotInterface | null = null
 ) {
@@ -261,17 +262,69 @@ async function executeJob(
                 break;
 
             case "IMAGE":
-                await activeBotInstance.sendPhoto(conversationId, {
-                    source: `static/upload/images/${job.message}`,
+                // Get the associated file for this job
+                const imageFile = await db.file.findFirst({
+                    where: {
+                        jobId: job.id,
+                        type: "image",
+                    },
                 });
-                console.log("✅ Image sent successfully");
+
+                if (imageFile) {
+                    await activeBotInstance.sendPhoto(conversationId, {
+                        source: imageFile.path,
+                    });
+                    console.log("✅ Image sent successfully");
+                } else {
+                    // Fallback for old jobs that might not have file records
+                    console.warn(
+                        `⚠️ No file record found for job ${job.id}, trying legacy path`
+                    );
+                    try {
+                        await activeBotInstance.sendPhoto(conversationId, {
+                            source: `static/upload/images/${job.message}`,
+                        });
+                        console.log("✅ Image sent successfully (legacy path)");
+                    } catch (error) {
+                        console.error(
+                            `❌ Failed to send image for job ${job.id}:`,
+                            error
+                        );
+                    }
+                }
                 break;
 
             case "VIDEO":
-                await activeBotInstance.sendVideo(conversationId, {
-                    source: `static/upload/videos/${job.message}`,
+                // Get the associated file for this job
+                const videoFile = await db.file.findFirst({
+                    where: {
+                        jobId: job.id,
+                        type: "video",
+                    },
                 });
-                console.log("✅ Video sent successfully");
+
+                if (videoFile) {
+                    await activeBotInstance.sendVideo(conversationId, {
+                        source: videoFile.path,
+                    });
+                    console.log("✅ Video sent successfully");
+                } else {
+                    // Fallback for old jobs that might not have file records
+                    console.warn(
+                        `⚠️ No file record found for job ${job.id}, trying legacy path`
+                    );
+                    try {
+                        await activeBotInstance.sendVideo(conversationId, {
+                            source: `static/upload/videos/${job.message}`,
+                        });
+                        console.log("✅ Video sent successfully (legacy path)");
+                    } catch (error) {
+                        console.error(
+                            `❌ Failed to send video for job ${job.id}:`,
+                            error
+                        );
+                    }
+                }
                 break;
 
             case "PROMPT":

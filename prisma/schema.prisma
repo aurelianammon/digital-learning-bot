@@ -28,7 +28,8 @@ model Job {
   updatedAt DateTime @updatedAt
 
   // Relations
-  bot Bot? @relation(fields: [botId], references: [id], onDelete: SetNull)
+  bot   Bot?    @relation(fields: [botId], references: [id], onDelete: SetNull)
+  files File[]  // Files associated with this job
 
   @@map("jobs")
 }
@@ -48,11 +49,16 @@ model Message {
 
 
 model File {
-  id        String   @id @default(cuid())
-  filename  String
-  type      String   // "image" or "video"
-  path      String
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  filename     String   // Unique filename on disk
+  originalName String   // Original filename from user
+  type         String   // "image" or "video"
+  path         String
+  jobId        String?  // Optional job relationship
+  createdAt    DateTime @default(now())
+
+  // Relations
+  job Job? @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@map("files")
 }

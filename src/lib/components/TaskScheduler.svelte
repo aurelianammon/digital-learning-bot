@@ -33,6 +33,15 @@
         }
     }
 
+    // Function to remove selected file
+    function removeFile() {
+        text = "";
+        uploadedFile = null;
+        if (fileInput) {
+            fileInput.value = "";
+        }
+    }
+
     // Task creation variables
     let type: "TEXT" | "IMAGE" | "VIDEO" | "PROMPT" = "TEXT";
     let text = "";
@@ -141,6 +150,7 @@
         text = "";
         date = "";
         type = "TEXT";
+        uploadedFile = null;
     }
 
     async function addJob() {
@@ -152,7 +162,7 @@
                     ? marked.parseInline(text)
                     : text;
 
-            await fetch("/api/jobs", {
+            const jobResponse = await fetch("/api/jobs", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -166,12 +176,44 @@
                 }),
             });
 
+            if (!jobResponse.ok) {
+                throw new Error("Failed to create job");
+            }
+
+            const job = await jobResponse.json();
+
+            // If we have an uploaded file, associate it with the job
+            if (uploadedFile) {
+                await fetch(`/api/files/${uploadedFile.id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        jobId: job.id,
+                    }),
+                });
+            }
+
             // Close popup and reset form
             closeAddTaskPopup();
             // Reload jobs after adding
             await loadJobs(false);
         } catch (error) {
             console.error("Error adding job:", error);
+            // If job creation failed and we have an uploaded file, clean it up
+            if (uploadedFile) {
+                try {
+                    await fetch(`/api/files/${uploadedFile.id}`, {
+                        method: "DELETE",
+                    });
+                } catch (cleanupError) {
+                    console.error(
+                        "Error cleaning up orphaned file:",
+                        cleanupError
+                    );
+                }
+            }
         }
     }
 
@@ -190,6 +232,13 @@
             console.error("Error removing job:", error);
         }
     }
+
+    // Store uploaded file info for job creation
+    let uploadedFile: {
+        id: string;
+        filename: string;
+        originalName: string;
+    } | null = null;
 
     async function uploadFile() {
         if (!fileInput.files?.[0]) return;
@@ -214,8 +263,16 @@
             const result = await response.json();
             console.log("Upload successful:", result);
 
+            // Store file info for later job association
+            uploadedFile = {
+                id: result.file.id,
+                filename: result.file.filename,
+                originalName: result.file.originalName,
+            };
+
+            // Display original filename
+            text = result.file.originalName;
             fileInput.value = "";
-            await refreshFileList(result.file.filename);
         } catch (error) {
             console.error("Error uploading file:", error);
             alert(
@@ -328,33 +385,20 @@
                             rows="4"
                         ></textarea>
                     {:else}
-                        <div class="select">
-                            {#if type === "IMAGE"}
-                                <select bind:value={text}>
-                                    <option disabled value=""
-                                        >Please select image</option
-                                    >
-                                    {#each images as image}
-                                        <option value={image}>{image}</option>
-                                    {/each}
-                                </select>
-                            {:else if type === "VIDEO"}
-                                <select bind:value={text}>
-                                    <option disabled value=""
-                                        >Please select video</option
-                                    >
-                                    {#each videos as video}
-                                        <option value={video}>{video}</option>
-                                    {/each}
-                                </select>
-                            {/if}
-
-                            <div>
+                        <div class="file-upload-section">
+                            <div class="upload-area">
                                 <label
                                     for="file-upload"
                                     class="custom-file-upload"
-                                    >Upload File</label
                                 >
+                                    {#if text}
+                                        📎 {text}
+                                    {:else}
+                                        📤 Upload {type === "IMAGE"
+                                            ? "Image"
+                                            : "Video"}
+                                    {/if}
+                                </label>
                                 <input
                                     id="file-upload"
                                     bind:this={fileInput}
@@ -364,6 +408,15 @@
                                         : "video/*"}
                                     on:change={uploadFile}
                                 />
+                                {#if text}
+                                    <button
+                                        type="button"
+                                        class="remove-file-button"
+                                        on:click={removeFile}
+                                    >
+                                        ✕
+                                    </button>
+                                {/if}
                             </div>
                         </div>
                     {/if}
@@ -596,16 +649,6 @@
         border-radius: 3px;
     }
 
-    .add select {
-        width: calc(100% - 83px);
-        margin-bottom: 10px;
-        font: inherit;
-        float: left;
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-    }
-
     .custom-file-upload {
         cursor: pointer;
         float: right;
@@ -624,6 +667,61 @@
 
     input[type="file"] {
         display: none;
+    }
+
+    /* File upload section styles */
+    .file-upload-section {
+        margin-bottom: 10px;
+    }
+
+    .upload-area {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 2px dashed #ccc;
+        border-radius: 6px;
+        background: #f9f9f9;
+    }
+
+    .upload-area:hover {
+        border-color: #999;
+        background: #f0f0f0;
+    }
+
+    .custom-file-upload {
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: black;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        color: #fff;
+        font-family: "GT America Mono", monospace;
+        flex: 1;
+        transition: background-color 0.2s;
+    }
+
+    .custom-file-upload:hover {
+        background: #333;
+    }
+
+    .remove-file-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background-color 0.2s;
+    }
+
+    .remove-file-button:hover {
+        background: #c82333;
     }
 
     /* Popup styles */
