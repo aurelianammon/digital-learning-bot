@@ -16,6 +16,9 @@ Thumbs.db
 !.env.example
 !.env.test
 
+static/upload/images/*
+static/upload/videos/*
+
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
