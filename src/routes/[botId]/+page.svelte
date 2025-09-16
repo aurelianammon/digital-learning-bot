@@ -116,7 +116,12 @@
             />
 
             <div class="scheduler">
-                <TaskScheduler {images} {videos} {selectedBotId} />
+                <TaskScheduler
+                    {images}
+                    {videos}
+                    {selectedBotId}
+                    on:update={handleDataUpdate}
+                />
             </div>
 
             <div class="history">

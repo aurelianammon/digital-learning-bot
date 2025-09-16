@@ -182,15 +182,28 @@
         formData.append("type", type);
 
         try {
-            await fetch("/api/files", {
+            const response = await fetch("/api/files", {
                 method: "POST",
                 body: formData,
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Upload failed:", errorData);
+                alert(`Upload failed: ${errorData.error || "Unknown error"}`);
+                return;
+            }
+
+            const result = await response.json();
+            console.log("Upload successful:", result);
 
             fileInput.value = "";
             dispatch("update");
         } catch (error) {
             console.error("Error uploading file:", error);
+            alert(
+                `Upload error: ${error instanceof Error ? error.message : "Unknown error"}`
+            );
         }
     }
 </script>
@@ -319,7 +332,7 @@
                                 </select>
                             {/if}
 
-                            <form on:submit|preventDefault={uploadFile}>
+                            <div>
                                 <label
                                     for="file-upload"
                                     class="custom-file-upload"
@@ -334,7 +347,7 @@
                                         : "video/*"}
                                     on:change={uploadFile}
                                 />
-                            </form>
+                            </div>
                         </div>
                     {/if}
 
