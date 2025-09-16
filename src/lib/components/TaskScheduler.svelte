@@ -34,7 +34,19 @@
     }
 
     // Function to remove selected file
-    function removeFile() {
+    async function removeFile() {
+        // Clean up the uploaded file if user removes it
+        if (uploadedFile) {
+            try {
+                await fetch(`/api/files/${uploadedFile.id}`, {
+                    method: "DELETE",
+                });
+                console.log("Removed file:", uploadedFile.originalName);
+            } catch (error) {
+                console.error("Error removing file:", error);
+            }
+        }
+
         text = "";
         uploadedFile = null;
         if (fileInput) {
@@ -47,6 +59,29 @@
     let text = "";
     let date = "";
     let fileInput: HTMLInputElement;
+
+    // Clean up uploaded file when type changes away from IMAGE/VIDEO
+    $: if (type !== "IMAGE" && type !== "VIDEO" && uploadedFile) {
+        // Clean up the file when switching away from file types
+        (async () => {
+            try {
+                await fetch(`/api/files/${uploadedFile.id}`, {
+                    method: "DELETE",
+                });
+                console.log(
+                    "Cleaned up file due to type change:",
+                    uploadedFile.originalName
+                );
+            } catch (error) {
+                console.error("Error cleaning up file on type change:", error);
+            }
+        })();
+        uploadedFile = null;
+        text = "";
+        if (fileInput) {
+            fileInput.value = "";
+        }
+    }
 
     $: filteredJobs = jobs.map((job) => {
         const jobDate = new Date(job.date);
@@ -144,7 +179,22 @@
         showAddTaskPopup = true;
     }
 
-    function closeAddTaskPopup() {
+    async function closeAddTaskPopup(cleanupFile = true) {
+        // Clean up any uploaded file if popup is being closed (unless job was successfully created)
+        if (uploadedFile && cleanupFile) {
+            try {
+                await fetch(`/api/files/${uploadedFile.id}`, {
+                    method: "DELETE",
+                });
+                console.log(
+                    "Cleaned up orphaned file:",
+                    uploadedFile.originalName
+                );
+            } catch (error) {
+                console.error("Error cleaning up orphaned file:", error);
+            }
+        }
+
         showAddTaskPopup = false;
         // Reset form
         text = "";
@@ -195,8 +245,8 @@
                 });
             }
 
-            // Close popup and reset form
-            closeAddTaskPopup();
+            // Close popup and reset form (don't cleanup file since job was created successfully)
+            closeAddTaskPopup(false);
             // Reload jobs after adding
             await loadJobs(false);
         } catch (error) {

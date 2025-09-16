@@ -281,10 +281,37 @@ async function executeJob(
                         `⚠️ No file record found for job ${job.id}, trying legacy path`
                     );
                     try {
-                        await activeBotInstance.sendPhoto(conversationId, {
-                            source: `static/upload/images/${job.message}`,
-                        });
-                        console.log("✅ Image sent successfully (legacy path)");
+                        // Try to find the file by original name in the upload directory
+                        const { readdir } = await import("fs/promises");
+                        const { join } = await import("path");
+
+                        const uploadDir = join(
+                            process.cwd(),
+                            "static",
+                            "upload",
+                            "images"
+                        );
+                        const files = await readdir(uploadDir);
+
+                        // Look for a file that might match (this is a best-effort fallback)
+                        const matchingFile = files.find(
+                            (file) =>
+                                file.includes(job.message.split(".")[0]) ||
+                                job.message.includes(file.split(".")[0])
+                        );
+
+                        if (matchingFile) {
+                            await activeBotInstance.sendPhoto(conversationId, {
+                                source: join(uploadDir, matchingFile),
+                            });
+                            console.log(
+                                "✅ Image sent successfully (legacy fallback)"
+                            );
+                        } else {
+                            console.error(
+                                `❌ No matching file found for job ${job.id} with message: ${job.message}`
+                            );
+                        }
                     } catch (error) {
                         console.error(
                             `❌ Failed to send image for job ${job.id}:`,
@@ -314,10 +341,37 @@ async function executeJob(
                         `⚠️ No file record found for job ${job.id}, trying legacy path`
                     );
                     try {
-                        await activeBotInstance.sendVideo(conversationId, {
-                            source: `static/upload/videos/${job.message}`,
-                        });
-                        console.log("✅ Video sent successfully (legacy path)");
+                        // Try to find the file by original name in the upload directory
+                        const { readdir } = await import("fs/promises");
+                        const { join } = await import("path");
+
+                        const uploadDir = join(
+                            process.cwd(),
+                            "static",
+                            "upload",
+                            "videos"
+                        );
+                        const files = await readdir(uploadDir);
+
+                        // Look for a file that might match (this is a best-effort fallback)
+                        const matchingFile = files.find(
+                            (file) =>
+                                file.includes(job.message.split(".")[0]) ||
+                                job.message.includes(file.split(".")[0])
+                        );
+
+                        if (matchingFile) {
+                            await activeBotInstance.sendVideo(conversationId, {
+                                source: join(uploadDir, matchingFile),
+                            });
+                            console.log(
+                                "✅ Video sent successfully (legacy fallback)"
+                            );
+                        } else {
+                            console.error(
+                                `❌ No matching file found for job ${job.id} with message: ${job.message}`
+                            );
+                        }
                     } catch (error) {
                         console.error(
                             `❌ Failed to send video for job ${job.id}:`,
