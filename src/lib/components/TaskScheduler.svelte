@@ -568,7 +568,8 @@
         font-size: 14px;
     }
 
-    .task-buttons button.active {
+    .task-buttons button.active,
+    .task-buttons button:hover {
         background-color: black;
         color: white;
     }
