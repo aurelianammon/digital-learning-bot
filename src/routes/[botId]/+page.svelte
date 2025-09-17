@@ -28,7 +28,7 @@
     async function loadBotData() {
         if (!selectedBotId) return;
 
-        loading = true;
+        // loading = true;
         error = "";
 
         try {

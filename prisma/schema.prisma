@@ -67,6 +67,7 @@ model Bot {
   id          String   @id @default(cuid())
   name        String   @default("assistant")
   openaiKey   String?  // OpenAI API key
+  model       String?  @default("gpt-4-1106-preview") // OpenAI completion model
   context     String?  // Bot-specific context/personality
   isActive    Boolean  @default(true)
   // Single chat per bot

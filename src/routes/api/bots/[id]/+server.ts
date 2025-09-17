@@ -37,7 +37,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
         const updates = await request.json();
 
         // Only allow certain fields to be updated
-        const allowedFields = ["name", "openaiKey", "isActive"];
+        const allowedFields = ["name", "openaiKey", "model", "isActive"];
         const filteredUpdates = Object.keys(updates)
             .filter((key) => allowedFields.includes(key))
             .reduce((obj, key) => {

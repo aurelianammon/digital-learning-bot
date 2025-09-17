@@ -6,14 +6,15 @@ export async function createChatCompletion(
     botId?: string
 ) {
     try {
-        // Get bot-specific context and API key from database
+        // Get bot-specific context, API key, and model from database
         let context: Array<{ role: "system"; content: string }> = [];
         let apiKey: string | null = null;
+        let model: string = "gpt-4-1106-preview"; // default model
 
         if (botId) {
             const bot = await db.bot.findUnique({
                 where: { id: botId },
-                select: { context: true, openaiKey: true },
+                select: { context: true, openaiKey: true, model: true },
             });
 
             if (bot?.context) {
@@ -22,6 +23,9 @@ export async function createChatCompletion(
 
             // Use bot-specific API key - required, no fallback
             apiKey = bot?.openaiKey || null;
+
+            // Use bot-specific model or default
+            model = bot?.model || "gpt-4-1106-preview";
         }
 
         // Return error if no API key is available
@@ -35,7 +39,7 @@ export async function createChatCompletion(
         });
 
         const chat = await openai.chat.completions.create({
-            model: "gpt-4-1106-preview",
+            model: model,
             messages: [...context, ...messages] as any,
             functions: [
                 {
@@ -72,7 +76,7 @@ export async function createChatCompletion(
 
             // New completion API call
             const chatWithFunction = await openai.chat.completions.create({
-                model: "gpt-4-1106-preview",
+                model: model,
                 messages: [
                     ...context,
                     ...messages,

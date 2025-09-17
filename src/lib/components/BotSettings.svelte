@@ -9,21 +9,54 @@
     const dispatch = createEventDispatcher();
 
     let openaiKey = "";
+    let selectedModel = "gpt-4-1106-preview";
     let linkedChat: any = null;
     let pinToVerify = "";
     let showApiKeySettings = false;
     let showLinkedChat = false;
     let verificationMessage = "";
     let showDeleteConfirm = false;
+    let isTestingApiKey = false;
+    let isLoadingModels = false;
+
+    // Available OpenAI models - loaded dynamically
+    let availableModels = [
+        {
+            value: "gpt-4-1106-preview",
+            label: "GPT-4 Turbo (gpt-4-1106-preview)",
+        },
+        { value: "gpt-4", label: "GPT-4 (gpt-4)" },
+        { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo (gpt-3.5-turbo)" },
+        {
+            value: "gpt-3.5-turbo-1106",
+            label: "GPT-3.5 Turbo 1106 (gpt-3.5-turbo-1106)",
+        },
+    ];
+
+    let hasFetchedModelsForCurrentBot = false;
 
     $: if (selectedBot) {
         openaiKey = selectedBot.openaiKey || "";
+        selectedModel = selectedBot.model || "gpt-4-1106-preview";
         linkedChat = selectedBot.linkedChatId
             ? {
                   chatId: selectedBot.linkedChatId,
                   linkedAt: selectedBot.linkedAt,
               }
             : null;
+
+        // Reset the flag when bot changes
+        hasFetchedModelsForCurrentBot = false;
+    }
+
+    // Separate reactive statement for fetching models to avoid loops
+    $: if (
+        selectedBot?.openaiKey &&
+        !hasFetchedModelsForCurrentBot &&
+        !isLoadingModels
+    ) {
+        hasFetchedModelsForCurrentBot = true;
+        fetchAvailableModels();
     }
 
     async function updateBotName() {
@@ -44,19 +77,136 @@
         }
     }
 
+    async function testApiKey() {
+        if (!openaiKey.trim()) return false;
+
+        try {
+            const response = await fetch("/api/openai/test-key", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    apiKey: openaiKey,
+                    model: selectedModel,
+                }),
+            });
+
+            const result = await response.json();
+            return response.ok && result.valid;
+        } catch (error) {
+            console.error("Error testing API key:", error);
+            return false;
+        }
+    }
+
+    async function fetchAvailableModels() {
+        if (!openaiKey.trim()) return;
+
+        isLoadingModels = true;
+
+        try {
+            const response = await fetch(
+                `/api/openai/models?apiKey=${encodeURIComponent(openaiKey)}`
+            );
+            const result = await response.json();
+
+            if (response.ok && result.models && result.models.length > 0) {
+                availableModels = result.models;
+                // Ensure the selected model is still valid
+                if (
+                    !result.models.some(
+                        (model: any) => model.value === selectedModel
+                    )
+                ) {
+                    selectedModel =
+                        result.models[0]?.value || "gpt-4-1106-preview";
+                }
+            } else {
+                console.warn(
+                    "Failed to fetch models:",
+                    result.error || "Unknown error"
+                );
+                // Keep the default models as fallback
+            }
+        } catch (error) {
+            console.error("Error fetching available models:", error);
+            // Keep the default models as fallback
+        } finally {
+            isLoadingModels = false;
+        }
+    }
+
     async function updateApiKey() {
+        if (!selectedBotId || !openaiKey.trim()) return;
+
+        isTestingApiKey = true;
+
+        try {
+            // Test the API key first
+            const isValid = await testApiKey();
+
+            if (!isValid) {
+                alert(
+                    "❌ Invalid API key. Please check your key and try again."
+                );
+                isTestingApiKey = false;
+                return;
+            }
+
+            // If valid, save to database
+            await fetch(`/api/bots/${selectedBotId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ openaiKey }),
+            });
+
+            // Fetch available models for this API key
+            await fetchAvailableModels();
+
+            // alert("✅ API key validated and saved successfully!");
+            dispatch("update");
+            // Keep the settings open so user can see the key was saved and configure model
+        } catch (error) {
+            console.error("Error updating OpenAI API key:", error);
+            alert("❌ Error saving API key. Please try again.");
+        } finally {
+            isTestingApiKey = false;
+        }
+    }
+
+    async function removeApiKey() {
         if (!selectedBotId) return;
 
         try {
             await fetch(`/api/bots/${selectedBotId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ openaiKey }),
+                body: JSON.stringify({ openaiKey: null }),
+            });
+
+            // Clear the local state
+            openaiKey = "";
+
+            // alert("✅ API key removed successfully!");
+            dispatch("update");
+            // Keep the settings open so user can immediately add a new key
+        } catch (error) {
+            console.error("Error removing OpenAI API key:", error);
+            alert("❌ Error removing API key. Please try again.");
+        }
+    }
+
+    async function updateModel() {
+        if (!selectedBotId) return;
+
+        try {
+            await fetch(`/api/bots/${selectedBotId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ model: selectedModel }),
             });
             dispatch("update");
-            showApiKeySettings = false;
         } catch (error) {
-            console.error("Error updating OpenAI API key:", error);
+            console.error("Error updating OpenAI model:", error);
         }
     }
 
@@ -154,7 +304,7 @@
         <!-- API Key Section -->
         <div class="setting-section">
             <div class="section-header">
-                {#if openaiKey}
+                {#if selectedBot?.openaiKey}
                     <label class="section-label">OpenAI Configuration ✔️</label>
                 {:else}
                     <label class="section-label">OpenAI Configuration</label>
@@ -169,15 +319,50 @@
             </div>
             {#if showApiKeySettings}
                 <div class="setting-content">
-                    <input
-                        type="password"
-                        bind:value={openaiKey}
-                        placeholder="sk-..."
-                        class="api-key-input"
-                    />
-                    <button on:click={updateApiKey} class="save-button">
-                        Save Key
-                    </button>
+                    <div class="api-key-section">
+                        {#if !selectedBot?.openaiKey}
+                            <input
+                                type="password"
+                                bind:value={openaiKey}
+                                placeholder="sk-..."
+                                class="api-key-input"
+                            />
+                        {/if}
+                        <button
+                            on:click={selectedBot?.openaiKey
+                                ? removeApiKey
+                                : updateApiKey}
+                            class="save-button"
+                            class:remove-button={selectedBot?.openaiKey}
+                            disabled={isTestingApiKey}
+                        >
+                            {#if isTestingApiKey}
+                                Testing...
+                            {:else if selectedBot?.openaiKey}
+                                Remove Key
+                            {:else}
+                                Save Key
+                            {/if}
+                        </button>
+                    </div>
+                    {#if selectedBot?.openaiKey}
+                        <select
+                            bind:value={selectedModel}
+                            on:change={updateModel}
+                            class="model-select"
+                            disabled={isLoadingModels}
+                        >
+                            {#if isLoadingModels}
+                                <option value="">Loading models...</option>
+                            {:else}
+                                {#each availableModels as model}
+                                    <option value={model.value}
+                                        >{model.label}</option
+                                    >
+                                {/each}
+                            {/if}
+                        </select>
+                    {/if}
                 </div>
             {/if}
         </div>
@@ -367,6 +552,12 @@
         box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
     }
 
+    .api-key-section {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
     .api-key-input {
         width: 100%;
         padding: 8px;
@@ -384,6 +575,24 @@
         box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
     }
 
+    .model-select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid black;
+        border-radius: 6px;
+        font-size: 14px;
+        line-height: 17px;
+        box-sizing: border-box;
+        background: white;
+        cursor: pointer;
+    }
+
+    .model-select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
     /* Button Styles */
     .save-button {
         background: black;
@@ -396,10 +605,27 @@
         font-size: 14px;
         font-weight: 500;
         transition: background-color 0.2s;
+        white-space: nowrap;
+        min-width: fit-content;
     }
 
-    .save-button:hover {
+    .save-button:hover:not(:disabled) {
         background: #00a724;
+    }
+
+    .save-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .save-button.remove-button {
+        background: black;
+        width: 100%;
+    }
+
+    .save-button.remove-button:hover:not(:disabled) {
+        background: #c82333;
     }
 
     /* Link Instructions */
