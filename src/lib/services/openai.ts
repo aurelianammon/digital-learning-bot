@@ -243,12 +243,16 @@ Be concise but specific in your reasoning. Consider the conversation flow, timin
         try {
             // Remove markdown code blocks if present
             let jsonContent = content.trim();
-            if (jsonContent.startsWith('```json')) {
-                jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-            } else if (jsonContent.startsWith('```')) {
-                jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            if (jsonContent.startsWith("```json")) {
+                jsonContent = jsonContent
+                    .replace(/^```json\s*/, "")
+                    .replace(/\s*```$/, "");
+            } else if (jsonContent.startsWith("```")) {
+                jsonContent = jsonContent
+                    .replace(/^```\s*/, "")
+                    .replace(/\s*```$/, "");
             }
-            
+
             const result = JSON.parse(jsonContent);
             return {
                 shouldEngage: result.shouldEngage === true,
