@@ -382,13 +382,87 @@ async function executeJob(
                 break;
 
             case "PROMPT":
-                // For now, just send the prompt as text
-                // TODO: Add AI completion logic here
-                await activeBotInstance.sendMessage(
-                    conversationId,
-                    job.message
-                );
-                console.log("✅ Prompt message sent successfully");
+                // Generate AI response using the bot's context and API key
+                try {
+                    const { createChatCompletion } = await import(
+                        "./openai.js"
+                    );
+
+                    // Get recent conversation history for context
+                    const recentMessages = await db.message.findMany({
+                        where: {
+                            botId: job.botId,
+                        },
+                        orderBy: { createdAt: "desc" },
+                        take: 10, // Last 10 messages for context
+                    });
+
+                    // Format messages for AI (reverse order to get chronological)
+                    const formattedMessages = recentMessages
+                        .reverse()
+                        .map((msg) => ({
+                            role: msg.role,
+                            content: msg.content,
+                        }));
+
+                    // Add the current prompt as a user message
+                    formattedMessages.push({
+                        role: "user",
+                        content: job.message,
+                    });
+
+                    // Generate AI response
+                    const aiResponse = await createChatCompletion(
+                        formattedMessages,
+                        job.botId || undefined
+                    );
+
+                    if (aiResponse) {
+                        // Send the AI response
+                        await activeBotInstance.sendMessage(
+                            conversationId,
+                            aiResponse,
+                            {
+                                parse_mode: "HTML",
+                            }
+                        );
+
+                        // Save the AI response to database
+                        await db.message.create({
+                            data: {
+                                role: "assistant",
+                                content: aiResponse,
+                                botId: job.botId,
+                            },
+                        });
+
+                        console.log(
+                            "✅ AI-generated prompt response sent successfully"
+                        );
+                    } else {
+                        // Fallback to sending the prompt as text if AI fails
+                        await activeBotInstance.sendMessage(
+                            conversationId,
+                            job.message
+                        );
+                        console.log(
+                            "⚠️ AI generation failed, sent prompt as text"
+                        );
+                    }
+                } catch (error) {
+                    console.error(
+                        "❌ Error generating AI response for prompt:",
+                        error
+                    );
+                    // Fallback to sending the prompt as text
+                    await activeBotInstance.sendMessage(
+                        conversationId,
+                        job.message
+                    );
+                    console.log(
+                        "⚠️ Fallback: sent prompt as text due to error"
+                    );
+                }
                 break;
 
             default:

@@ -1,28 +1,38 @@
 import OpenAI from "openai";
 import { db } from "$lib/database.js";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_KEY,
-});
-
 export async function createChatCompletion(
     messages: Array<{ role: string; content: string }>,
     botId?: string
 ) {
     try {
-        // Get bot-specific context from database
+        // Get bot-specific context and API key from database
         let context: Array<{ role: "system"; content: string }> = [];
+        let apiKey: string | null = null;
 
         if (botId) {
             const bot = await db.bot.findUnique({
                 where: { id: botId },
-                select: { context: true },
+                select: { context: true, openaiKey: true },
             });
 
             if (bot?.context) {
                 context = [{ role: "system" as const, content: bot.context }];
             }
+
+            // Use bot-specific API key - required, no fallback
+            apiKey = bot?.openaiKey || null;
         }
+
+        // Return error if no API key is available
+        if (!apiKey) {
+            throw new Error("No OpenAI API key configured for this bot");
+        }
+
+        // Create OpenAI instance with bot-specific API key
+        const openai = new OpenAI({
+            apiKey: apiKey,
+        });
 
         const chat = await openai.chat.completions.create({
             model: "gpt-4-1106-preview",
@@ -84,8 +94,31 @@ export async function createChatCompletion(
     }
 }
 
-export async function createImage(prompt: string) {
+export async function createImage(prompt: string, botId?: string) {
     try {
+        // Get bot-specific API key from database
+        let apiKey: string | null = null;
+
+        if (botId) {
+            const bot = await db.bot.findUnique({
+                where: { id: botId },
+                select: { openaiKey: true },
+            });
+
+            // Use bot-specific API key - required, no fallback
+            apiKey = bot?.openaiKey || null;
+        }
+
+        // Return error if no API key is available
+        if (!apiKey) {
+            throw new Error("No OpenAI API key configured for this bot");
+        }
+
+        // Create OpenAI instance with bot-specific API key
+        const openai = new OpenAI({
+            apiKey: apiKey,
+        });
+
         const response = await openai.images.generate({
             prompt: prompt,
             n: 1,

@@ -690,6 +690,7 @@
         border: 1px solid #000000;
         border-radius: 8px;
         font-size: 14px;
+        min-height: 200px;
     }
 
     .add input {
