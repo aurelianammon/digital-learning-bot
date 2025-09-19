@@ -19,15 +19,10 @@ export const GET: RequestHandler = async ({ url }) => {
         // Fetch available models
         const models = await openai.models.list();
 
-        // Filter for chat completion models only
+        // Filter for GPT-5 models only
         const chatModels = models.data
             .filter(
-                (model) =>
-                    model.id.includes("gpt-") && // Include all GPT models (gpt-4, gpt-5, etc.)
-                    (model.id.includes("gpt-4") ||
-                        model.id.includes("gpt-3.5") ||
-                        model.id.includes("gpt-5") || // Future GPT-5 support
-                        model.id.includes("gpt-3")) // Catch other GPT-3 variants
+                (model) => model.id.includes("gpt-5") // Only GPT-5 models
             )
             .map((model) => ({
                 value: model.id,
