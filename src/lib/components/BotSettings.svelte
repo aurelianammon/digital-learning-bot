@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, onMount, onDestroy } from "svelte";
     import { goto } from "$app/navigation";
 
     export let botName: string = "assistant";
@@ -35,6 +35,70 @@
     ];
 
     let hasFetchedModelsForCurrentBot = false;
+    let pollInterval: NodeJS.Timeout | null = null;
+    let lastBotDataHash = "";
+
+    async function loadBotData() {
+        if (!selectedBotId) return;
+
+        try {
+            const response = await fetch(`/api/bots/${selectedBotId}`, {
+                headers: {
+                    Authorization: `Bearer ${selectedBotId}`,
+                    "X-Bot-ID": selectedBotId,
+                },
+            });
+
+            if (response.ok) {
+                const newBotData = await response.json();
+                const newDataHash = JSON.stringify(newBotData);
+
+                // Only update if data actually changed
+                if (newDataHash !== lastBotDataHash) {
+                    lastBotDataHash = newDataHash;
+                    dispatch("update", { botData: newBotData });
+                }
+            }
+        } catch (error) {
+            console.error("Error loading bot data:", error);
+        }
+    }
+
+    function startPolling() {
+        // Clear any existing interval
+        if (pollInterval) {
+            clearInterval(pollInterval);
+        }
+
+        // Poll every 3 seconds for bot data changes
+        pollInterval = setInterval(() => {
+            loadBotData();
+        }, 3000);
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    // Load bot data when component mounts or botId changes
+    onMount(() => {
+        loadBotData();
+        startPolling();
+    });
+
+    onDestroy(() => {
+        stopPolling();
+    });
+
+    $: if (selectedBotId) {
+        loadBotData();
+        startPolling();
+    } else {
+        stopPolling();
+    }
 
     $: if (selectedBot) {
         openaiKey = selectedBot.openaiKey || "";
@@ -45,6 +109,9 @@
                   linkedAt: selectedBot.linkedAt,
               }
             : null;
+
+        // Update the hash when selectedBot changes
+        lastBotDataHash = JSON.stringify(selectedBot);
 
         // Reset the flag when bot changes
         hasFetchedModelsForCurrentBot = false;
