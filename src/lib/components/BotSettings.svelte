@@ -14,6 +14,7 @@
     let pinToVerify = "";
     let showApiKeySettings = false;
     let showLinkedChat = false;
+    let showEngagementSettings = false;
     let verificationMessage = "";
     let showDeleteConfirm = false;
     let isTestingApiKey = false;
@@ -210,6 +211,23 @@
         }
     }
 
+    async function updateEngagementFactor() {
+        if (!selectedBotId) return;
+
+        try {
+            await fetch(`/api/bots/${selectedBotId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    engagementFactor: selectedBot.engagementFactor,
+                }),
+            });
+            // dispatch("update");
+        } catch (error) {
+            console.error("Error updating engagement factor:", error);
+        }
+    }
+
     async function verifyPin() {
         if (!selectedBotId || !pinToVerify.trim()) return;
 
@@ -299,6 +317,40 @@
                 on:focus={(e) => (e.target as HTMLInputElement)?.select()}
                 placeholder="Enter bot name..."
             />
+        </div>
+
+        <!-- Engagement Factor Section -->
+        <div class="setting-section">
+            <div class="section-header">
+                <label class="section-label">Engagement Factor</label>
+                <button
+                    class="toggle-button"
+                    on:click={() =>
+                        (showEngagementSettings = !showEngagementSettings)}
+                    class:active={showEngagementSettings}
+                >
+                    {showEngagementSettings ? "▼" : "▶"}
+                </button>
+            </div>
+            {#if showEngagementSettings}
+                <div class="setting-content">
+                    <div class="slider-container">
+                        <input
+                            id="engagement-slider"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            bind:value={selectedBot.engagementFactor}
+                            on:input={updateEngagementFactor}
+                            class="engagement-slider"
+                        />
+                        <div class="slider-value">
+                            {Math.round(selectedBot.engagementFactor * 100)}%
+                        </div>
+                    </div>
+                </div>
+            {/if}
         </div>
 
         <!-- API Key Section -->
@@ -839,5 +891,53 @@
 
     .confirm-delete-button:hover {
         background: #c82333;
+    }
+
+    /* Engagement Factor Slider */
+    .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .engagement-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        background: #000;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .engagement-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #000;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .engagement-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #000;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider-value {
+        min-width: 40px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: #000;
+        background: rgba(0, 0, 0, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
     }
 </style>

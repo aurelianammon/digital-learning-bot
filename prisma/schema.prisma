@@ -38,6 +38,7 @@ model Message {
   id        String   @id @default(cuid())
   role      String   // "user" or "assistant"
   content   String
+  name      String?  // Name of the sender (user name or bot name)
   botId     String?  // Optional bot relationship
   createdAt DateTime @default(now())
 
@@ -67,9 +68,10 @@ model Bot {
   id          String   @id @default(cuid())
   name        String   @default("assistant")
   openaiKey   String?  // OpenAI API key
-  model       String?  @default("gpt-4-1106-preview") // OpenAI completion model
+  model       String?  @default("gpt-5-nano") // OpenAI completion model
   context     String?  // Bot-specific context/personality
   isActive    Boolean  @default(true)
+  engagementFactor Float @default(0.5) // Probability factor for AI engagement (0.0-1.0)
   // Single chat per bot
   linkedChatId String? @unique // Telegram chat ID
   linkedAt     DateTime? // When the chat was linked

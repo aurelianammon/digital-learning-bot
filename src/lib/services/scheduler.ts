@@ -1,5 +1,6 @@
 import * as schedule from "node-schedule";
 import { db } from "$lib/database.js";
+import { formatMessagesForAI } from "../utilities/messageFormatter.js";
 
 // Bot interface for executing jobs
 interface BotInterface {
@@ -388,27 +389,20 @@ async function executeJob(
                         "./openai.js"
                     );
 
-                    // Get recent conversation history for context
-                    const recentMessages = await db.message.findMany({
-                        where: {
-                            botId: job.botId,
-                        },
-                        orderBy: { createdAt: "desc" },
-                        take: 10, // Last 10 messages for context
-                    });
-
-                    // Format messages for AI (reverse order to get chronological)
-                    const formattedMessages = recentMessages
-                        .reverse()
-                        .map((msg) => ({
-                            role: msg.role,
-                            content: msg.content,
-                        }));
+                    // Get recent conversation history for context using utility function
+                    const formattedMessages = await formatMessagesForAI(
+                        job.botId || "",
+                        10 // Last 10 messages for context
+                    );
 
                     // Add the current prompt as a user message
                     formattedMessages.push({
                         role: "user",
-                        content: job.message,
+                        content: JSON.stringify({
+                            timestamp: Date.now(),
+                            name: "User",
+                            message: job.message,
+                        }),
                     });
 
                     // Generate AI response
@@ -428,11 +422,16 @@ async function executeJob(
                         );
 
                         // Save the AI response to database
+                        const botForName = await db.bot.findUnique({
+                            where: { id: job.botId || undefined },
+                            select: { name: true },
+                        });
                         await db.message.create({
                             data: {
                                 role: "assistant",
                                 content: aiResponse,
-                                botId: job.botId,
+                                name: botForName?.name || "Assistant",
+                                botId: job.botId || undefined,
                             },
                         });
 

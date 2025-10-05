@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { db } from "$lib/database.js";
+import { scheduleJob } from "./scheduler.js";
 
 export async function createChatCompletion(
     messages: Array<{ role: string; content: string }>,
@@ -10,7 +11,7 @@ export async function createChatCompletion(
         // Get bot-specific context, API key, and model from database
         let context: Array<{ role: "system"; content: string }> = [];
         let apiKey: string | null = null;
-        let model: string = "gpt-4-1106-preview"; // default model
+        let model: string = "gpt-5-nano"; // default model
 
         if (botId) {
             const bot = await db.bot.findUnique({
@@ -19,14 +20,29 @@ export async function createChatCompletion(
             });
 
             if (bot?.context) {
-                context = [{ role: "system" as const, content: bot.context }];
+                context = [
+                    {
+                        role: "system" as const,
+                        content:
+                            bot.context +
+                            "\n\nYou are an intelligent assistant with the ability to create scheduled tasks and reminders. When users ask you to create tasks, set reminders, or schedule something, use the createTask function to help them. You can create tasks with specific messages and dates/times for future execution.",
+                    },
+                ];
+            } else {
+                context = [
+                    {
+                        role: "system" as const,
+                        content:
+                            "You are an intelligent assistant with the ability to create scheduled tasks and reminders. When users ask you to create tasks, set reminders, or schedule something, use the createTask function to help them. You can create tasks with specific messages and dates/times for future execution.",
+                    },
+                ];
             }
 
             // Use bot-specific API key - required, no fallback
             apiKey = bot?.openaiKey || null;
 
             // Use bot-specific model or default
-            model = bot?.model || "gpt-4-1106-preview";
+            model = bot?.model || "gpt-5-nano";
         }
 
         // Return error if no API key is available
@@ -42,54 +58,98 @@ export async function createChatCompletion(
         const chat = await openai.chat.completions.create({
             model: model,
             messages: [...context, ...messages] as any,
-            functions: [
+            tools: [
                 {
-                    name: "getStaffInfo",
-                    description: "Get the contact info of a staff member",
-                    parameters: {
-                        type: "object",
-                        properties: {
-                            staffPosition: {
-                                type: "string",
-                                description:
-                                    'The position of the desired staff member. E.g. "author" or "owner"',
+                    type: "function",
+                    function: {
+                        name: "createTask",
+                        description:
+                            "Create a scheduled task/reminder for the user",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                message: {
+                                    type: "string",
+                                    description:
+                                        "The message/content of the task",
+                                },
+                                date: {
+                                    type: "string",
+                                    description:
+                                        "When the task should be executed (ISO date string)",
+                                },
+                                reason: {
+                                    type: "string",
+                                    description:
+                                        "Why this task is being created",
+                                },
                             },
+                            required: ["message", "date"],
                         },
-                        required: ["staffPosition"],
                     },
                 },
             ],
-            function_call: "auto",
+            tool_choice: "auto",
         });
 
         let answer = chat.choices[0].message?.content;
         const wantsToUseFunction =
-            chat.choices[0].finish_reason === "function_call";
+            chat.choices[0].finish_reason === "tool_calls";
 
         if (wantsToUseFunction) {
-            const functionToUse = chat.choices[0].message?.function_call;
+            const toolCalls = chat.choices[0].message?.tool_calls;
             let dataToReturn = {};
 
-            if (functionToUse?.name === "getStaffInfo") {
-                const args = JSON.parse(functionToUse.arguments);
-                dataToReturn = getStaffInfo(args.staffPosition);
+            if (toolCalls && toolCalls.length > 0) {
+                const toolCall = toolCalls[0];
+
+                // Type guard to ensure it's a function tool call
+                if (toolCall.type === "function" && toolCall.function) {
+                    if (toolCall.function.name === "createTask") {
+                        const args = JSON.parse(toolCall.function.arguments);
+                        console.log("🤖 Creating scheduled task:", args);
+
+                        // Create the scheduled task
+                        const taskResult = await createScheduledTask(
+                            args.message,
+                            new Date(args.date),
+                            botId || ""
+                        );
+
+                        console.log("📅 Task creation result:", taskResult);
+
+                        dataToReturn = {
+                            success: taskResult.success,
+                            // taskId: taskResult.taskId,
+                            message: taskResult.success
+                                ? `Task created successfully!`
+                                : `Failed to create task: ${taskResult.error}`,
+                            error: taskResult.error,
+                        };
+                    }
+                }
+
+                // New completion API call with tool response
+                const chatWithFunction = await openai.chat.completions.create({
+                    model: model,
+                    messages: [
+                        ...context,
+                        ...messages,
+                        {
+                            role: "assistant" as const,
+                            content: null,
+                            tool_calls: toolCalls,
+                        },
+                        {
+                            role: "tool" as const,
+                            tool_call_id: toolCall.id,
+                            content: JSON.stringify(dataToReturn),
+                        },
+                    ] as any,
+                });
+
+                answer = chatWithFunction.choices[0].message?.content;
             }
-
-            // New completion API call
-            const chatWithFunction = await openai.chat.completions.create({
-                model: model,
-                messages: [
-                    ...context,
-                    ...messages,
-                    {
-                        role: "function" as const,
-                        name: functionToUse?.name || "",
-                        content: JSON.stringify(dataToReturn),
-                    },
-                ] as any,
-            });
-
-            answer = chatWithFunction.choices[0].message?.content;
         }
 
         return answer;
@@ -137,141 +197,51 @@ export async function createImage(prompt: string, botId?: string) {
     }
 }
 
-// Helper function for staff info
-function getStaffInfo(staffPosition: string) {
-    switch (staffPosition) {
-        case "author":
-            return {
-                name: "Rebecca",
-                email: "rebecca@company.com",
-            };
-        case "owner":
-            return {
-                name: "Josh",
-                email: "josh@company.com",
-            };
-        default:
-            return {
-                name: "No name found",
-                email: "Not found",
-            };
-    }
-}
-
 /**
- * Analyze conversation context to determine if bot should engage
- * Uses GPT-4o for optimal balance of quality and cost for engagement decisions
- * Returns decision and reasoning for engagement
+ * Create a scheduled task for a bot
+ * Returns the created task information
  */
-export async function analyzeConversationEngagement(
-    messages: Array<{ role: string; content: string }>,
-    botName: string,
-    botId?: string
-): Promise<{ shouldEngage: boolean; reason: string }> {
-    if (!botId) {
-        throw new Error("Bot ID is required for conversation analysis");
-    }
-
+export async function createScheduledTask(
+    message: string,
+    date: Date,
+    botId: string
+): Promise<{ success: boolean; taskId?: string; error?: string }> {
     try {
-        // Get bot configuration
+        // Validate bot exists
         const bot = await db.bot.findUnique({
             where: { id: botId },
-            select: { openaiKey: true, model: true },
         });
 
-        if (!bot?.openaiKey) {
-            throw new Error("No OpenAI API key configured for this bot");
-        }
-
-        // Create OpenAI instance with bot-specific key
-        const openai = new OpenAI({
-            apiKey: bot.openaiKey,
-        });
-
-        // Prepare conversation context for analysis
-        const conversationContext = messages
-            .slice(-8) // Last 8 messages for context
-            .map((msg) => `${msg.role}: ${msg.content}`)
-            .join("\n");
-
-        const analysisPrompt = `You are a conversation analysis agent. Your job is to determine if a bot named "${botName}" should engage in this conversation.
-
-CONVERSATION CONTEXT:
-${conversationContext}
-
-ANALYSIS CRITERIA:
-- Direct mentions of the bot name
-- Unanswered questions or requests for help
-- Conversation lulls where engagement would be valuable
-- Topics the bot could meaningfully contribute to
-- Whether the conversation needs assistance or guidance
-- If there's a natural opportunity for the bot to add value
-
-RESPONSE FORMAT:
-Respond with a JSON object containing:
-{
-  "shouldEngage": true/false,
-  "reason": "Brief explanation of why the bot should or shouldn't engage"
-}
-
-Be concise but specific in your reasoning. Consider the conversation flow, timing, and context.`;
-
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o", // Use GPT-4o for better engagement analysis quality
-            messages: [
-                {
-                    role: "system",
-                    content:
-                        "You are a conversation analysis agent. Respond with ONLY valid JSON - no markdown formatting, no code blocks, just pure JSON.",
-                },
-                {
-                    role: "user",
-                    content: analysisPrompt,
-                },
-            ],
-            temperature: 0.3,
-            max_tokens: 200, // Allow for more detailed reasoning with GPT-4o
-            response_format: { type: "json_object" }, // Ensure JSON response
-        });
-
-        const content = response.choices[0]?.message?.content;
-        if (!content) {
-            throw new Error("No response from OpenAI");
-        }
-
-        // Parse the JSON response (handle markdown-wrapped JSON)
-        try {
-            // Remove markdown code blocks if present
-            let jsonContent = content.trim();
-            if (jsonContent.startsWith("```json")) {
-                jsonContent = jsonContent
-                    .replace(/^```json\s*/, "")
-                    .replace(/\s*```$/, "");
-            } else if (jsonContent.startsWith("```")) {
-                jsonContent = jsonContent
-                    .replace(/^```\s*/, "")
-                    .replace(/\s*```$/, "");
-            }
-
-            const result = JSON.parse(jsonContent);
+        if (!bot) {
             return {
-                shouldEngage: result.shouldEngage === true,
-                reason: result.reason || "No reason provided",
-            };
-        } catch (parseError) {
-            console.error("Failed to parse AI response:", content);
-            return {
-                shouldEngage: false,
-                reason: "Failed to parse AI analysis",
+                success: false,
+                error: "Bot not found",
             };
         }
-    } catch (error) {
-        console.error("Error in conversation analysis:", error);
+
+        // Create the job directly in database
+        const job = await db.job.create({
+            data: {
+                type: "TEXT",
+                message,
+                date,
+                botId,
+                state: true,
+            },
+        });
+
+        // Schedule the job using the scheduler
+        scheduleJob(job);
+
         return {
-            shouldEngage: false,
-            reason: `Analysis failed: ${
-                error instanceof Error ? error.message : "Unknown error"
-            }`,
+            success: true,
+            taskId: job.id,
+        };
+    } catch (error) {
+        console.error("Error creating scheduled task:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
         };
     }
 }

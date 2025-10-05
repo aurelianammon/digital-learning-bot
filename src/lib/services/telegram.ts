@@ -1,25 +1,16 @@
 import { Telegraf } from "telegraf";
 import { db } from "$lib/database.js";
-import {
-    createChatCompletion,
-    createImage,
-    analyzeConversationEngagement,
-} from "./openai.js";
+import { createChatCompletion, createImage } from "./openai.js";
 import { generateImageCaption } from "./huggingface.js";
 import {
     initializeScheduler,
     setBotInstance,
     cleanupScheduler,
 } from "./scheduler.js";
+import { shouldBotRespond } from "../utilities/botResponse.js";
+import { formatMessagesForAI } from "../utilities/messageFormatter.js";
 
 export let bot: Telegraf | null = null;
-
-// Cache for AI engagement analysis to avoid excessive API calls
-const engagementCache = new Map<
-    string,
-    { result: boolean; reason: string; timestamp: number }
->();
-const CACHE_DURATION = 30000; // 30 seconds cache
 
 export async function initializeTelegramBot() {
     if (!process.env.TELEGRAM_KEY) {
@@ -153,91 +144,6 @@ export async function initializeTelegramBot() {
         }
     });
 
-    // Helper function to determine if bot should respond using AI analysis
-    async function shouldBotRespond(
-        messageText: string,
-        linkedBot: any,
-        messageDate: number
-    ): Promise<boolean> {
-        if (!linkedBot) return false;
-
-        // Always respond if directly mentioned (fast path)
-        const directMention = new RegExp(`\\b(${linkedBot.name})\\b`, "i").test(
-            messageText
-        );
-        if (directMention) {
-            console.log(
-                `🤖 Bot responding due to direct mention of "${linkedBot.name}"`
-            );
-            return true;
-        }
-
-        // Get recent conversation history for AI analysis
-        const recentMessages = await db.message.findMany({
-            where: {
-                botId: linkedBot.id,
-            },
-            orderBy: { createdAt: "desc" },
-            take: 10, // Last 15 messages for better context
-        });
-
-        if (recentMessages.length === 0) return false;
-
-        // Prepare messages for AI analysis (include timestamps)
-        // Reverse to get chronological order since we fetched in desc order
-        const formattedMessages = recentMessages.reverse().map((msg) => ({
-            role: msg.role,
-            content: `[${msg.createdAt.toLocaleString()}] ${msg.content}`,
-        }));
-
-        try {
-            // Create cache key based on recent messages content hash
-            const cacheKey = `${linkedBot.id}-${JSON.stringify(
-                formattedMessages.slice(-5)
-            )}`;
-            const now = Date.now();
-
-            // Check cache first
-            const cached = engagementCache.get(cacheKey);
-            if (cached && now - cached.timestamp < CACHE_DURATION) {
-                console.log(
-                    `🤖 Using cached engagement decision: ${cached.reason}`
-                );
-                return cached.result;
-            }
-
-            console.log("Analyzing conversation engagement", formattedMessages);
-
-            // Use AI to analyze conversation and decide on engagement
-            const analysis = await analyzeConversationEngagement(
-                formattedMessages,
-                linkedBot.name,
-                linkedBot.id
-            );
-
-            // Cache the result
-            engagementCache.set(cacheKey, {
-                result: analysis.shouldEngage,
-                reason: analysis.reason,
-                timestamp: now,
-            });
-
-            if (analysis.shouldEngage) {
-                console.log(
-                    `🤖 Bot engaging due to AI analysis: ${analysis.reason}`
-                );
-            } else {
-                console.log(`🤖 Bot not engaging: ${analysis.reason}`);
-            }
-
-            return analysis.shouldEngage;
-        } catch (error) {
-            console.error("Error in AI conversation analysis:", error);
-            // Fallback to basic rules if AI analysis fails
-            return false;
-        }
-    }
-
     // Handle all other messages
     bot.on("message", async (ctx) => {
         // console.log("message", ctx.message);
@@ -284,38 +190,29 @@ export async function initializeTelegramBot() {
                 await db.message.create({
                     data: {
                         role: "user",
-                        content: `${ctx.message.from.first_name}: ${ctx.message.text}`,
+                        content: ctx.message.text,
+                        name: ctx.message.from.first_name,
                         botId: linkedBot?.id || null,
                     },
                 });
 
+                // Small delay to ensure database write is committed
+                await new Promise((resolve) => setTimeout(resolve, 100));
+
                 // Check if the bot should respond (either mentioned directly or based on conversation flow)
                 const shouldRespond = await shouldBotRespond(
                     ctx.message.text,
-                    linkedBot,
-                    ctx.message.date
+                    linkedBot
                 );
 
                 if (linkedBot && shouldRespond) {
                     await ctx.sendChatAction("typing");
 
                     try {
-                        const messages = await db.message.findMany({
-                            where: {
-                                OR: [{ botId: linkedBot.id }],
-                            },
-                            orderBy: { createdAt: "asc" },
-                            take: 100,
-                        });
-
-                        const formattedMessages = messages.map((msg) => ({
-                            role: msg.role,
-                            content:
-                                "[" +
-                                msg.createdAt.toLocaleString() +
-                                "] " +
-                                msg.content,
-                        }));
+                        const formattedMessages = await formatMessagesForAI(
+                            linkedBot.id,
+                            100
+                        );
 
                         const completion = await createChatCompletion(
                             formattedMessages,
@@ -329,6 +226,7 @@ export async function initializeTelegramBot() {
                                 content:
                                     completion ||
                                     "Sorry, I could not generate a response.",
+                                name: linkedBot.name,
                                 botId: linkedBot.id,
                             },
                         });

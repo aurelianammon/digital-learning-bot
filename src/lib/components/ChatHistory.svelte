@@ -144,7 +144,7 @@
                         </button>
                     </div>
                     <div class="message-content">
-                        {@html message.content}
+                        {message.name}: {@html message.content}
                     </div>
                 </div>
             {/each}
