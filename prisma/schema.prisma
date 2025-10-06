@@ -81,6 +81,7 @@ model Bot {
   // Relations
   jobs        Job[]
   messages    Message[]
+  contextFiles ContextFile[]
 
   @@map("bots")
 }
@@ -93,5 +94,21 @@ model PendingLink {
   createdAt DateTime @default(now())
 
   @@map("pending_links")
+}
+
+model ContextFile {
+  id        String   @id @default(cuid())
+  filename  String   // Unique filename on disk
+  originalName String // Original filename from user
+  path      String   // File path in static/uploads/files
+  summary   String   // AI-generated summary of the PDF content
+  botId     String   // Associated bot
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  bot Bot @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@map("context_files")
 }
 
