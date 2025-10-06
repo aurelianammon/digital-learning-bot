@@ -100,8 +100,9 @@ model ContextFile {
   id        String   @id @default(cuid())
   filename  String   // Unique filename on disk
   originalName String // Original filename from user
-  path      String   // File path in static/uploads/files
+  path      String   // File path in static/upload/files
   summary   String   // AI-generated summary of the PDF content
+  parsedText String?  // Full extracted text from the PDF
   botId     String   // Associated bot
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
