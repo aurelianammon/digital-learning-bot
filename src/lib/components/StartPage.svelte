@@ -128,58 +128,111 @@
             }
         }
     }
+
+    let activeTab = "access";
+
+    function changeTab(tab: string) {
+        activeTab = tab;
+    }
 </script>
 
 <div class="start-page" bind:this={startPageElement}>
     <div class="start-container">
-        <h3 class="tile-title">Digital Learning Assistant</h3>
-
-        <div class="access-section">
-            <h2>Access Existing Bot</h2>
-            <p class="instruction">
-                Enter the Bot ID you received when creating your bot
-            </p>
-            <div class="input-group">
-                <input
-                    type="text"
-                    bind:value={botIdInput}
-                    placeholder="Enter Bot ID"
-                    on:keydown={handleKeydown}
-                    class="bot-id-input"
-                />
-                <button
-                    on:click={accessBot}
-                    disabled={!botIdInput.trim()}
-                    class="access-button"
-                >
-                    Access Bot
-                </button>
+        <div class="buttons">
+            <button
+                class:active={activeTab === "access"}
+                class="tile-title"
+                on:click={() => changeTab("access")}
+            >
+                Digital Learning Assistant
+            </button>
+            <button
+                class:active={activeTab === "info"}
+                class="tile-title"
+                on:click={() => changeTab("info")}>Info</button
+            >
+        </div>
+        {#if activeTab === "access"}
+            <div class="access-section">
+                <h2>Access Existing Bot</h2>
+                <p class="instruction">
+                    Enter the Bot ID you received when creating your bot
+                </p>
+                <div class="input-group">
+                    <input
+                        type="text"
+                        bind:value={botIdInput}
+                        placeholder="Enter Bot ID"
+                        on:keydown={handleKeydown}
+                        class="bot-id-input"
+                    />
+                    <button
+                        on:click={accessBot}
+                        disabled={!botIdInput.trim()}
+                        class="access-button"
+                    >
+                        Access Bot
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <div class="divider">
-            <span>or</span>
-        </div>
-
-        <div class="create-section">
-            <h2>Create New Bot</h2>
-            <div class="input-group">
-                <input
-                    type="text"
-                    bind:value={newBotName}
-                    placeholder="Enter Bot Name"
-                    on:keydown={handleKeydown}
-                    class="bot-name-input"
-                />
-                <button
-                    on:click={createBot}
-                    disabled={!newBotName.trim() || isCreating}
-                    class="create-button"
-                >
-                    {isCreating ? "Creating..." : "Create Bot"}
-                </button>
+            <div class="divider">
+                <span>or</span>
             </div>
-        </div>
+
+            <div class="create-section">
+                <h2>Create New Bot</h2>
+                <div class="input-group">
+                    <input
+                        type="text"
+                        bind:value={newBotName}
+                        placeholder="Enter Bot Name"
+                        on:keydown={handleKeydown}
+                        class="bot-name-input"
+                    />
+                    <button
+                        on:click={createBot}
+                        disabled={!newBotName.trim() || isCreating}
+                        class="create-button"
+                    >
+                        {isCreating ? "Creating..." : "Create Bot"}
+                    </button>
+                </div>
+            </div>
+        {:else if activeTab === "info"}
+            <div class="info-section">
+                <p>
+                    The digital learning assistant is an interactive chatbot
+                    designed to work with groups of people. It uses ChatGPT
+                    under the hood to generate responses to user messages in
+                    realtime.
+                </p>
+                <h2>How to use</h2>
+                <p>
+                    To use this bot you need to create a bot and have an active
+                    OpenAI API key. Add the Telegram bot Digital Learning
+                    Assistant to your group chat and send /link. Thats it, have
+                    fun!
+                </p>
+                <h2>About</h2>
+                <p>
+                    This tool was initially developed by Studio <a
+                        href="https://alles-negativ.ch"
+                        target="_blank">alles-negativ</a
+                    >
+                    for the AI Encounter workshop hosted at ZHdK in Zurich.
+                </p>
+                <p class="no-margin">
+                    It is currently in a public beta phase and can be used by
+                    anyone, feedback is very much welcome on
+                    <a
+                        href="https://github.com/aurelianammon/digital-learning-bot"
+                        target="_blank">Github</a
+                    >. No data is shared with third parties. Use at your own
+                    risk.
+                </p>
+            </div>
+        {/if}
 
         {#if errorMessage}
             <div class="error-message">
@@ -206,6 +259,31 @@
         /* padding: 20px; */
     }
 
+    .no-margin {
+        margin-bottom: 0px;
+    }
+
+    .buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .buttons button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: black;
+        border: 1px solid black;
+    }
+
+    .buttons button:hover,
+    .buttons button.active {
+        color: white;
+        background: black;
+    }
+
     .tile-title {
         font-size: 14px;
         border: 1px solid black;
@@ -227,8 +305,7 @@
         /* text-align: center; */
     }
 
-    .access-section h2,
-    .create-section h2 {
+    h2 {
         margin: 0 0 5px 0;
         color: #000000;
         font-size: 1.3em;
@@ -239,11 +316,15 @@
         margin: 0 0 10px 0;
     }
 
-    .instruction {
+    p {
         margin: 0 0 10px 0;
         color: black;
         font-size: 14px;
         /* font-style: italic; */
+    }
+
+    .info-section p {
+        line-height: 1.3;
     }
 
     .input-group {
