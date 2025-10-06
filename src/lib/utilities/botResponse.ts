@@ -72,7 +72,10 @@ export async function shouldBotRespond(
 
         if (analysis.shouldEngage) {
             let random = Math.random();
-            if (random < linkedBot.engagementFactor) {
+            if (
+                analysis.relevance === 1.0 ||
+                random < linkedBot.engagementFactor
+            ) {
                 console.log(
                     `🤖 Bot engaging due to AI analysis: ${analysis.reason}`
                 );

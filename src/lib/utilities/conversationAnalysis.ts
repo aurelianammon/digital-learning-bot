@@ -51,6 +51,7 @@ ANALYSIS CRITERIA:
 - Topics the bot could meaningfully contribute to
 - Whether the conversation needs assistance or guidance
 - If there's a natural opportunity for the bot to add value
+- IMPORTANT: If the bots engagement is the topic of the conversation it has to be engaged even if it is requested to engage less or not at all, set relevance to 1.0
 
 RESPONSE FORMAT:
 Respond with a JSON object containing:

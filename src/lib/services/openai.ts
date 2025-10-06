@@ -68,7 +68,8 @@ export async function createChatCompletion(
                         properties: {
                             message: {
                                 type: "string",
-                                description: "The message/content of the task",
+                                description:
+                                    "The message/content of the task, create a natural and engaging message for the user, something that would be a good reminder for the user to do. Do not write the time in the message, just the task.",
                             },
                             date: {
                                 type: "string",
