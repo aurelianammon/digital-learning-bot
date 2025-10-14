@@ -292,7 +292,6 @@
                 <!-- Context Files List -->
                 {#if contextFiles.length > 0}
                     <div class="context-files">
-                        <h5>Uploaded Files:</h5>
                         {#each contextFiles as file}
                             <div class="context-file-item">
                                 <div class="file-info">
@@ -393,14 +392,8 @@
     }
 
     .collapsible-content {
-        margin-top: 10px;
+        margin-top: 5px;
         cursor: default;
-    }
-
-    .file-upload-section h5 {
-        margin: 10px 0 5px 0;
-        font-size: 12px;
-        color: #666;
     }
 
     .upload-status {
@@ -415,9 +408,10 @@
         color: white;
         border: none;
         padding: 8px 16px;
+        height: 35px;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 14px;
         transition: background-color 0.2s;
         width: 100%;
     }
@@ -435,17 +429,26 @@
     .context-files {
         max-height: 300px;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-top: 5px;
     }
 
     .context-file-item {
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 12px;
+        background: none;
+        border: 1px solid rgba(0, 0, 0, 1);
+        border-radius: 6px;
+        padding: 0px 10px 0px 10px;
+        font-size: 14px;
+        height: 33px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+
+    .context-file-item:hover {
+        background: rgba(0, 0, 0, 0.1);
     }
 
     .file-info {
@@ -455,19 +458,19 @@
     }
 
     .file-name {
-        font-weight: bold;
-        color: #333;
+        /* font-weight: bold; */
+        /* color: #333; */
         flex: 1;
         margin: 0px;
         word-break: break-word;
     }
 
     .delete-btn {
-        background: #ff4757;
+        background: black;
         color: white;
         border: none;
-        padding: 4px 8px;
-        border-radius: 4px;
+        padding: 2px 4px;
+        border-radius: 0px;
         cursor: pointer;
         font-size: 11px;
         transition: background-color 0.2s;
