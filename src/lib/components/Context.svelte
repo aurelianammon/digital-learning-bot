@@ -303,7 +303,7 @@
                                     class="delete-btn"
                                     on:click={() => deleteContextFile(file.id)}
                                 >
-                                    Delete
+                                    REMOVE
                                 </button>
                             </div>
                         {/each}
@@ -447,10 +447,6 @@
         align-items: center;
     }
 
-    .context-file-item:hover {
-        background: rgba(0, 0, 0, 0.1);
-    }
-
     .file-info {
         display: flex;
         justify-content: space-between;
@@ -472,7 +468,7 @@
         padding: 2px 4px;
         border-radius: 0px;
         cursor: pointer;
-        font-size: 11px;
+        font-size: 10px;
         transition: background-color 0.2s;
     }
 
