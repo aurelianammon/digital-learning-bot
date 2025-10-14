@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createEventDispatcher, onMount } from "svelte";
+    import { createEventDispatcher, onMount, onDestroy } from "svelte";
     import { browser } from "$app/environment";
 
     export let context: string = "";
@@ -20,6 +20,8 @@
     let uploading = false;
     let fileInput: HTMLInputElement;
     let detailsOpen = false;
+    let showUpdateIndicator = false;
+    let debounceTimer: NodeJS.Timeout | null = null;
 
     onMount(async () => {
         // Load PDF.js only in the browser
@@ -44,6 +46,20 @@
         loadContextFiles();
     });
 
+    onDestroy(() => {
+        // Clear debounce timer on component destroy
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+    });
+
+    function showUpdateNotification() {
+        showUpdateIndicator = true;
+        setTimeout(() => {
+            showUpdateIndicator = false;
+        }, 3000);
+    }
+
     async function loadContextFiles() {
         if (!selectedBotId) return;
 
@@ -61,7 +77,7 @@
         }
     }
 
-    async function handleContextChange() {
+    async function saveContext() {
         try {
             await fetch("/api/context", {
                 method: "PUT",
@@ -75,9 +91,22 @@
                 }),
             });
             dispatch("update");
+            showUpdateNotification();
         } catch (error) {
             console.error("Error updating context:", error);
         }
+    }
+
+    function handleContextChange() {
+        // Clear existing timer
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+
+        // Set new timer to save after 500ms of no typing
+        debounceTimer = setTimeout(() => {
+            saveContext();
+        }, 1000);
     }
 
     async function parsePDFText(file: File): Promise<string> {
@@ -192,6 +221,9 @@
             // Reload context files
             await loadContextFiles();
 
+            // Show update notification
+            showUpdateNotification();
+
             // Clear the file input
             fileInput.value = "";
         } catch (error) {
@@ -224,6 +256,9 @@
 
             // Reload context files
             await loadContextFiles();
+
+            // Show update notification
+            showUpdateNotification();
         } catch (error) {
             console.error("Error deleting file:", error);
             alert(
@@ -234,12 +269,17 @@
 </script>
 
 <div class="context context-component">
-    <h3 class="tile-title">Context / Personality</h3>
+    <div class="context-header">
+        <h3 class="tile-title">Context / Personality</h3>
+        {#if showUpdateIndicator}
+            <span class="update-indicator">✨ Updated!</span>
+        {/if}
+    </div>
 
     <!-- Context Text Area -->
     <textarea
         bind:value={context}
-        on:change={handleContextChange}
+        on:input={handleContextChange}
         cols="30"
         rows="8"
         placeholder="Enter the context and personality for this bot..."
@@ -327,6 +367,37 @@
         display: flex;
         flex-direction: column;
         /* gap: 10px; */
+    }
+
+    .tile-title {
+        margin-bottom: 0px;
+    }
+
+    .context-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .update-indicator {
+        font-size: 0.8em;
+        color: #4caf50;
+        font-weight: normal;
+        margin-left: 10px;
+        animation: pulse 1s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+        100% {
+            opacity: 1;
+        }
     }
 
     textarea {

@@ -37,6 +37,8 @@
     let hasFetchedModelsForCurrentBot = false;
     let pollInterval: NodeJS.Timeout | null = null;
     let lastBotDataHash = "";
+    let showUpdateIndicator = false;
+    let debounceTimer: NodeJS.Timeout | null = null;
 
     async function loadBotData() {
         if (!selectedBotId) return;
@@ -91,7 +93,18 @@
 
     onDestroy(() => {
         stopPolling();
+        // Clear debounce timer on component destroy
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
     });
+
+    function showUpdateNotification() {
+        showUpdateIndicator = true;
+        setTimeout(() => {
+            showUpdateIndicator = false;
+        }, 3000);
+    }
 
     $: if (selectedBotId) {
         loadBotData();
@@ -127,7 +140,7 @@
         fetchAvailableModels();
     }
 
-    async function updateBotName() {
+    async function saveBotName() {
         if (!selectedBotId) {
             console.warn("No bot selected for name update");
             return;
@@ -140,9 +153,22 @@
                 body: JSON.stringify({ name: botName }),
             });
             dispatch("update");
+            showUpdateNotification();
         } catch (error) {
             console.error("Error updating bot name:", error);
         }
+    }
+
+    function handleNameChange() {
+        // Clear existing timer
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+
+        // Set new timer to save after 1s of no typing
+        debounceTimer = setTimeout(() => {
+            saveBotName();
+        }, 1000);
     }
 
     async function testApiKey() {
@@ -231,6 +257,7 @@
             await fetchAvailableModels();
 
             // alert("✅ API key validated and saved successfully!");
+            showUpdateNotification();
             dispatch("update");
             // Keep the settings open so user can see the key was saved and configure model
         } catch (error) {
@@ -255,6 +282,7 @@
             openaiKey = "";
 
             // alert("✅ API key removed successfully!");
+            showUpdateNotification();
             dispatch("update");
             // Keep the settings open so user can immediately add a new key
         } catch (error) {
@@ -272,6 +300,7 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ model: selectedModel }),
             });
+            showUpdateNotification();
             dispatch("update");
         } catch (error) {
             console.error("Error updating OpenAI model:", error);
@@ -289,6 +318,7 @@
                     engagementFactor: selectedBot.engagementFactor,
                 }),
             });
+            showUpdateNotification();
             // dispatch("update");
         } catch (error) {
             console.error("Error updating engagement factor:", error);
@@ -313,6 +343,7 @@
             if (response.ok) {
                 verificationMessage = `✅ ${result.message}`;
                 pinToVerify = "";
+                showUpdateNotification();
                 dispatch("update");
             } else {
                 verificationMessage = `❌ ${result.error}`;
@@ -338,6 +369,7 @@
             await fetch(`/api/bots/${selectedBotId}/chats`, {
                 method: "DELETE",
             });
+            showUpdateNotification();
             dispatch("update");
         } catch (error) {
             console.error("Error unlinking chat:", error);
@@ -371,7 +403,12 @@
 
 <!-- Bot Settings -->
 <div class="bot-settings">
-    <h3 class="tile-title">Settings</h3>
+    <div class="settings-header">
+        <h3 class="tile-title">Settings</h3>
+        {#if showUpdateIndicator}
+            <span class="update-indicator">✨ Updated!</span>
+        {/if}
+    </div>
 
     <div class="setting-sections">
         <!-- Bot Name Section -->
@@ -380,7 +417,7 @@
             <input
                 class="name-input"
                 bind:value={botName}
-                on:change={updateBotName}
+                on:input={handleNameChange}
                 on:focus={(e) => (e.target as HTMLInputElement)?.select()}
                 placeholder="Enter bot name..."
             />
@@ -600,6 +637,37 @@
         height: 100%;
         padding: 10px;
         box-sizing: border-box;
+    }
+
+    .tile-title {
+        margin-bottom: 0px;
+    }
+
+    .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .update-indicator {
+        font-size: 0.8em;
+        color: #4caf50;
+        font-weight: normal;
+        margin-left: 10px;
+        animation: pulse 1s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+        100% {
+            opacity: 1;
+        }
     }
 
     .setting-sections {
