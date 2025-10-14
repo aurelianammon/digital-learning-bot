@@ -18,6 +18,7 @@ Thumbs.db
 
 static/upload/images/*
 static/upload/videos/*
+static/upload/files/*
 
 # Vite
 vite.config.js.timestamp-*

@@ -19,19 +19,20 @@
     }> = [];
     let uploading = false;
     let fileInput: HTMLInputElement;
+    let detailsOpen = false;
 
     onMount(async () => {
         // Load PDF.js only in the browser
         if (browser) {
             try {
-                console.log("Loading PDF.js library...");
+                // console.log("Loading PDF.js library...");
                 const pdfjs = await import("pdfjs-dist");
                 pdfjsLib = pdfjs;
 
                 // Use local worker from static directory
                 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-                console.log("PDF.js library loaded successfully");
+                // console.log("PDF.js library loaded successfully");
                 pdfLibLoading = false;
             } catch (error) {
                 console.error("Failed to load PDF.js library:", error);
@@ -86,13 +87,13 @@
                 throw new Error("PDF.js library not loaded yet");
             }
 
-            console.log("Starting PDF parsing for:", file.name);
+            // console.log("Starting PDF parsing for:", file.name);
             const arrayBuffer = await file.arrayBuffer();
-            console.log("ArrayBuffer loaded, size:", arrayBuffer.byteLength);
+            // console.log("ArrayBuffer loaded, size:", arrayBuffer.byteLength);
 
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             const pdf = await loadingTask.promise;
-            console.log(`PDF loaded, ${pdf.numPages} pages found`);
+            // console.log(`PDF loaded, ${pdf.numPages} pages found`);
 
             let fullText = "";
 
@@ -104,12 +105,12 @@
                     .map((item: any) => item.str)
                     .join(" ");
                 fullText += pageText + "\n\n";
-                console.log(
-                    `Extracted text from page ${i}, length: ${pageText.length}`
-                );
+                // console.log(
+                //     `Extracted text from page ${i}, length: ${pageText.length}`
+                // );
             }
 
-            console.log(`Total text extracted: ${fullText.length} characters`);
+            // console.log(`Total text extracted: ${fullText.length} characters`);
             return fullText.trim();
         } catch (error) {
             console.error("Error parsing PDF:", error);
@@ -181,7 +182,7 @@
             }
 
             const result = await response.json();
-            console.log("File uploaded successfully:", result);
+            // console.log("File uploaded successfully:", result);
 
             // Show success message
             alert(
@@ -246,69 +247,71 @@
 
     <!-- File Upload Section -->
     <div class="file-upload-section">
-        <h4>Context Files (PDF)</h4>
-        <div class="upload-controls">
-            <input
-                bind:this={fileInput}
-                type="file"
-                accept=".pdf"
-                style="display: none;"
-                on:change={handleFileUpload}
-            />
-            <button
-                class="upload-btn"
-                on:click={() => fileInput.click()}
-                disabled={uploading || pdfLibLoading}
-            >
-                {#if pdfLibLoading}
-                    ⏳ Loading PDF library...
-                {:else if uploading}
-                    ⏳ Processing PDF...
-                {:else}
-                    📄 Upload PDF
-                {/if}
-            </button>
-            {#if uploading}
-                <p class="upload-status">
-                    Extracting text and generating AI summary...
-                </p>
-            {:else if pdfLibLoading}
-                <p class="upload-status">Initializing PDF reader...</p>
-            {/if}
-        </div>
+        <details bind:open={detailsOpen}>
+            <summary>
+                <div class="section-header">
+                    <h4>Context Files (PDF)</h4>
+                    {#if detailsOpen}
+                        <span class="toggle-arrow">▼</span>
+                    {:else}
+                        <span class="toggle-arrow">▶</span>
+                    {/if}
+                </div>
+            </summary>
+            <div class="collapsible-content">
+                <div class="upload-controls">
+                    <input
+                        bind:this={fileInput}
+                        type="file"
+                        accept=".pdf"
+                        style="display: none;"
+                        on:change={handleFileUpload}
+                    />
+                    <button
+                        class="upload-btn"
+                        on:click={() => fileInput.click()}
+                        disabled={uploading || pdfLibLoading}
+                    >
+                        {#if pdfLibLoading}
+                            ⏳ Loading PDF library...
+                        {:else if uploading}
+                            ⏳ Processing PDF...
+                        {:else}
+                            Upload PDF
+                        {/if}
+                    </button>
+                    {#if uploading}
+                        <p class="upload-status">
+                            Extracting text and generating AI summary...
+                        </p>
+                    {:else if pdfLibLoading}
+                        <p class="upload-status">Initializing PDF reader...</p>
+                    {/if}
+                </div>
 
-        <!-- Context Files List -->
-        {#if contextFiles.length > 0}
-            <div class="context-files">
-                <h5>Uploaded Files:</h5>
-                {#each contextFiles as file}
-                    <div class="context-file-item">
-                        <div class="file-info">
-                            <span class="file-name">{file.originalName}</span>
-                            <span class="file-date"
-                                >{new Date(
-                                    file.createdAt
-                                ).toLocaleDateString()}</span
-                            >
-                        </div>
-                        <div class="file-summary">
-                            <details>
-                                <summary>AI Summary</summary>
-                                <div class="summary-content">
-                                    {file.summary}
+                <!-- Context Files List -->
+                {#if contextFiles.length > 0}
+                    <div class="context-files">
+                        <h5>Uploaded Files:</h5>
+                        {#each contextFiles as file}
+                            <div class="context-file-item">
+                                <div class="file-info">
+                                    <span class="file-name"
+                                        >{file.originalName}</span
+                                    >
                                 </div>
-                            </details>
-                        </div>
-                        <button
-                            class="delete-btn"
-                            on:click={() => deleteContextFile(file.id)}
-                        >
-                            Delete
-                        </button>
+                                <button
+                                    class="delete-btn"
+                                    on:click={() => deleteContextFile(file.id)}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        {/each}
                     </div>
-                {/each}
+                {/if}
             </div>
-        {/if}
+        </details>
     </div>
 </div>
 
@@ -321,7 +324,10 @@
         overflow: hidden;
         padding: 10px;
         background: rgb(200, 255, 186);
-        height: fit-content;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        /* gap: 10px; */
     }
 
     textarea {
@@ -333,7 +339,7 @@
         font-size: 14px;
         resize: vertical;
         min-height: 250px;
-        height: calc(100% - 50px);
+        flex: 1;
         box-sizing: border-box;
     }
 
@@ -345,25 +351,56 @@
 
     /* File Upload Section */
     .file-upload-section {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        margin-top: 10px;
+        /* padding-top: 15px; */
+    }
+
+    .file-upload-section details {
+        cursor: pointer;
+    }
+
+    .file-upload-section summary {
+        list-style: none;
+        user-select: none;
+        cursor: pointer;
+    }
+
+    .file-upload-section summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .file-upload-section h4 {
-        margin: 0 0 10px 0;
-        font-size: 14px;
-        color: #333;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .toggle-arrow {
+        font-size: 12px;
+        color: black;
+        padding-right: 5px;
+        transition: transform 0.2s;
+        display: inline-block;
+        font-family: "GT America Mono", monospace;
+    }
+
+    .collapsible-content {
+        margin-top: 10px;
+        cursor: default;
     }
 
     .file-upload-section h5 {
         margin: 10px 0 5px 0;
         font-size: 12px;
         color: #666;
-    }
-
-    .upload-controls {
-        margin-bottom: 15px;
     }
 
     .upload-status {
@@ -374,7 +411,7 @@
     }
 
     .upload-btn {
-        background: #667eea;
+        background: black;
         color: white;
         border: none;
         padding: 8px 16px;
@@ -382,6 +419,7 @@
         cursor: pointer;
         font-size: 12px;
         transition: background-color 0.2s;
+        width: 100%;
     }
 
     .upload-btn:hover:not(:disabled) {
@@ -404,52 +442,24 @@
         border: 1px solid rgba(0, 0, 0, 0.1);
         border-radius: 8px;
         padding: 10px;
-        margin-bottom: 8px;
         font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .file-info {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
     }
 
     .file-name {
         font-weight: bold;
         color: #333;
         flex: 1;
-        margin-right: 10px;
+        margin: 0px;
         word-break: break-word;
-    }
-
-    .file-date {
-        color: #666;
-        font-size: 11px;
-        white-space: nowrap;
-    }
-
-    .file-summary {
-        margin-bottom: 8px;
-    }
-
-    .file-summary details {
-        cursor: pointer;
-    }
-
-    .file-summary summary {
-        font-weight: 500;
-        color: #555;
-        margin-bottom: 5px;
-    }
-
-    .file-summary .summary-content {
-        margin: 5px 0 0 0;
-        color: #666;
-        line-height: 1.5;
-        font-size: 11px;
-        white-space: pre-wrap;
-        word-wrap: break-word;
     }
 
     .delete-btn {

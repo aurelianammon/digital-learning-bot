@@ -388,12 +388,14 @@
 
         <!-- Engagement Factor Section -->
         <div class="setting-section">
-            <div class="section-header">
+            <div
+                class="section-header"
+                on:click={() =>
+                    (showEngagementSettings = !showEngagementSettings)}
+            >
                 <label class="section-label">Engagement Factor</label>
                 <button
                     class="toggle-button"
-                    on:click={() =>
-                        (showEngagementSettings = !showEngagementSettings)}
                     class:active={showEngagementSettings}
                 >
                     {showEngagementSettings ? "▼" : "▶"}
@@ -422,17 +424,17 @@
 
         <!-- API Key Section -->
         <div class="setting-section">
-            <div class="section-header">
+            <div
+                class="section-header"
+                on:click={() => (showApiKeySettings = !showApiKeySettings)}
+                class:active={showApiKeySettings}
+            >
                 {#if selectedBot?.openaiKey}
                     <label class="section-label">OpenAI Configuration ✔️</label>
                 {:else}
                     <label class="section-label">OpenAI Configuration</label>
                 {/if}
-                <button
-                    class="toggle-button"
-                    on:click={() => (showApiKeySettings = !showApiKeySettings)}
-                    class:active={showApiKeySettings}
-                >
+                <button class="toggle-button">
                     {showApiKeySettings ? "▼" : "▶"}
                 </button>
             </div>
@@ -488,17 +490,16 @@
 
         <!-- Chat Linking Section -->
         <div class="setting-section">
-            <div class="section-header">
+            <div
+                class="section-header"
+                on:click={() => (showLinkedChat = !showLinkedChat)}
+            >
                 {#if linkedChat}
                     <label class="section-label">Telegram Chat ✔️</label>
                 {:else}
                     <label class="section-label">Telegram Chat</label>
                 {/if}
-                <button
-                    class="toggle-button"
-                    on:click={() => (showLinkedChat = !showLinkedChat)}
-                    class:active={showLinkedChat}
-                >
+                <button class="toggle-button" class:active={showLinkedChat}>
                     {showLinkedChat ? "▼" : "▶"}
                 </button>
             </div>

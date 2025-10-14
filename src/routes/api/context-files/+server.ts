@@ -92,9 +92,15 @@ export const POST: RequestHandler = withAuth(async ({ request, bot }) => {
                 apiKey: fullBot.openaiKey,
             });
 
-            // Create a simple summarization prompt
-            const summaryPrompt = `Please provide a plain summary of the following document. Just summarize what it's about and what information it contains.
+            // Create a summarization prompt optimized for AI context
+            const summaryPrompt = `Summarize the following document in a way that can be used as context for AI conversations. Include:
+- Main topics and key concepts
+- Important facts, data, and information
+- Relevant details that would help an AI assistant answer questions about this content
 
+Be comprehensive but concise. Focus on information density rather than narrative flow.
+
+Document:
 ${textToSummarize}`;
 
             // Make direct API call to OpenAI
@@ -104,7 +110,7 @@ ${textToSummarize}`;
                     {
                         role: "system",
                         content:
-                            "You are a helpful assistant that creates plain, straightforward summaries of documents. Provide a clear summary in plain text without any special formatting.",
+                            "You are an AI assistant specialized in creating dense, information-rich summaries optimized for use as context in AI systems. Extract and preserve all key information, facts, concepts, and details in a clear, organized format.",
                     },
                     { role: "user", content: summaryPrompt },
                 ],

@@ -19,14 +19,37 @@ export async function createChatCompletion(
                 select: { context: true, openaiKey: true, model: true },
             });
 
+            // Load context files (PDFs) for this bot
+            const contextFiles = await db.contextFile.findMany({
+                where: { botId: botId },
+                select: { summary: true, originalName: true },
+                orderBy: { createdAt: "desc" },
+            });
+
             const internalContext =
                 "You are an intelligent assistant with multiple capabilities. IMPORTANT: You can use MULTIPLE tools in a single response if the user's request requires it. For example, if they ask for a reminder AND want you to change engagement, use BOTH createTask AND changeEngagementFactor tools. You can also use tools that depend on each other - for example, use getCurrentEngagement to check the current engagement level before using changeEngagementFactor to modify it. CRITICAL RELATIVE CALCULATIONS: When users ask for relative changes (like 'reduce a bit', 'increase slightly', 'make it less'), you MUST: 1) Use getCurrentEngagement first, 2) Calculate the new value based on the current value and the user's request: 'a bit' = ±0.1, 'slightly' = ±0.1, 'more/less' = ±0.2, 'much' = ±0.3, 'significantly' = ±0.4, 3) Use changeEngagementFactor with the calculated value. Example: current=0.8, user says 'reduce a bit' → calculate 0.8-0.1=0.7 → use changeEngagementFactor(0.7). Always respond with plain text messages only. Do not format your responses as JSON objects. Respond naturally as a conversational assistant.";
 
-            if (bot?.context) {
+            // Build context with uploaded documents
+            let contextContent = bot?.context || "";
+
+            // Add context files if available
+            if (contextFiles.length > 0) {
+                const filesContext = contextFiles
+                    .map(
+                        (file) =>
+                            `[Context from ${file.originalName}]:\n${file.summary}`
+                    )
+                    .join("\n\n");
+                contextContent = contextContent
+                    ? `${contextContent}\n\n--- Additional Context from Uploaded Documents ---\n${filesContext}`
+                    : `--- Context from Uploaded Documents ---\n${filesContext}`;
+            }
+
+            if (contextContent) {
                 context = [
                     {
                         role: "system" as const,
-                        content: bot.context + "\n\n" + internalContext,
+                        content: contextContent + "\n\n" + internalContext,
                     },
                 ];
             } else {
