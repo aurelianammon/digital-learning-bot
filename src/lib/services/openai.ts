@@ -6,7 +6,7 @@ export async function createChatCompletion(
     messages: Array<{ role: string; content: string }>,
     botId?: string
 ) {
-    // console.log("Creating chat completion", messages, botId);
+    console.log("Creating chat completion", messages, botId);
     try {
         // Get bot-specific context, API key, and model from database
         let context: Array<{ role: "system"; content: string }> = [];
