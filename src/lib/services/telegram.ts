@@ -1,7 +1,7 @@
 import { Telegraf } from "telegraf";
 import { db } from "$lib/database.js";
 import { createChatCompletion, createImage } from "./openai.js";
-import { generateImageCaption } from "./huggingface.js";
+import { generateImageCaption } from "./imageProcessing.js";
 import {
     initializeScheduler,
     setBotInstance,
@@ -162,16 +162,27 @@ export async function initializeTelegramBot() {
                 return;
             }
 
+            if (!linkedBot.openaiKey) {
+                await ctx.reply(
+                    `No OpenAI API key configured for this bot. Please configure the bot in the backend interface.`
+                );
+                return;
+            }
+
             // Handle images
             if ("photo" in ctx.message && ctx.message.photo) {
                 const photo = ctx.message.photo[ctx.message.photo.length - 1];
                 const fileLink = await ctx.telegram.getFileLink(photo.file_id);
-                const caption = await generateImageCaption(fileLink.href);
+                const caption = await generateImageCaption(
+                    fileLink.href,
+                    linkedBot.openaiKey as string
+                );
 
                 await db.message.create({
                     data: {
                         role: "user",
-                        content: `image_description: ${caption}`,
+                        name: ctx.message.from.first_name,
+                        content: `Sent image showing ${caption}`,
                         botId: linkedBot?.id || null,
                     },
                 });
@@ -180,7 +191,8 @@ export async function initializeTelegramBot() {
                     await db.message.create({
                         data: {
                             role: "user",
-                            content: `${ctx.message.from.first_name}: ${ctx.message.caption}`,
+                            name: ctx.message.from.first_name,
+                            content: ctx.message.caption,
                             botId: linkedBot?.id || null,
                         },
                     });
