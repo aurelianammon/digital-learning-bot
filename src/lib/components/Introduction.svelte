@@ -91,9 +91,17 @@
                             <li>Go to the Settings</li>
                             <li>Enter your OpenAI API key</li>
                             <li>
+                                The Engagement Factor is the probability of the
+                                bot to engage with the user. The default is 0.5.
+                                You can change it to a value between 0 and 1.
+                                The higher the value, the more the bot will
+                                engage in the conversation
+                            </li>
+                            <li>
                                 Customize the bot's system prompt to define its
                                 personality and behavior by editing the Context
-                                or adding pdffiles
+                                or upload pdf files that provide additional
+                                knowledge
                             </li>
                         </ol>
                     </div>
@@ -122,22 +130,18 @@
                         <p>
                             Mention the bot in your Telegram group chat. The bot
                             will respond using AI based on your conversation.
+                            The bot can autonomousely engage in the
+                            conversation, if it thinks it is relevant.
                         </p>
                     </div>
 
                     <div class="usage-item">
                         <h3>View Chat History</h3>
                         <p>
-                            Check the "Chat History" tab in the dashboard to see
-                            all conversations with your bot.
-                        </p>
-                    </div>
-
-                    <div class="usage-item">
-                        <h3>Upload Context Files</h3>
-                        <p>
-                            Use the "Context" tab to upload PDF files that
-                            provide additional knowledge for your bot.
+                            Check the "Chat History" in the dashboard to see all
+                            conversations with your bot. Irrelevant or
+                            inappropriate messages can also be deleted from the
+                            chat history.
                         </p>
                     </div>
 
@@ -145,7 +149,10 @@
                         <h3>Schedule Messages</h3>
                         <p>
                             Use the "Task Scheduler" to schedule automatic
-                            messages, images, or prompts at specific times.
+                            messages, images, or prompts at specific times. This
+                            can help to keep the conversation engaging and
+                            interesting as well as make it easier for the
+                            partisipants to follow the schedule of the event.
                         </p>
                     </div>
                 </section>
@@ -175,7 +182,7 @@
 
 <style>
     :root {
-        --modal-background: rgb(255, 104, 220);
+        --modal-background: rgb(254, 134, 226);
     }
     .modal-backdrop {
         position: fixed;
@@ -290,6 +297,7 @@
     li {
         font-size: 14px;
         line-height: 1.3;
+        list-style-type: disc;
     }
 
     .usage-item {
