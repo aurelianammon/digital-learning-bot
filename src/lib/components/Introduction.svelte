@@ -120,6 +120,21 @@
                             </li>
                         </ol>
                     </div>
+
+                    <div class="step">
+                        <h3>Step 4: Unlink from Telegram</h3>
+                        <ol>
+                            <li>
+                                In the group, type <code>/unlink</code> to remove
+                                the bot from the group
+                            </li>
+                            <li>
+                                The bot will not be deleted from the database,
+                                but it will not be able to respond to messages
+                                in the group anymore.
+                            </li>
+                        </ol>
+                    </div>
                 </section>
 
                 <section>

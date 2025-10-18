@@ -601,12 +601,8 @@
     {#if showDeleteConfirm}
         <div class="delete-confirmation">
             <div class="confirmation-dialog">
-                <h4>⚠️ Delete Bot</h4>
-                <p>
-                    Are you sure you want to delete <strong
-                        >"{selectedBot?.name}"</strong
-                    >?
-                </p>
+                <div class="tile-title">Danger Zone</div>
+                <p>Are you sure you want to delete this bot?</p>
                 <p class="warning-text">
                     This will permanently delete:
                     <br />• All messages for this bot
@@ -967,31 +963,30 @@
 
     .confirmation-dialog {
         background: white;
-        border-radius: 8px;
-        padding: 24px;
+        border-radius: 20px;
+        padding: 10px;
         max-width: 400px;
         width: 90%;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
-    .confirmation-dialog h4 {
-        margin: 0 0 16px 0;
-        color: #dc3545;
-        font-size: 1.2em;
+    .confirmation-dialog .tile-title {
+        background: red;
+        margin-bottom: 30px;
     }
 
     .confirmation-dialog p {
         margin: 0 0 12px 0;
+        font-size: 14px;
         line-height: 1.4;
     }
 
     .warning-text {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 4px;
-        padding: 12px;
-        color: #856404;
-        font-size: 0.9em;
+        background: red;
+        border-radius: 8px;
+        padding: 10px;
+        color: black;
+        font-size: 14px;
     }
 
     .confirmation-buttons {
@@ -1016,7 +1011,7 @@
     }
 
     .confirm-delete-button {
-        background: #dc3545;
+        background: red;
         color: white;
         border: none;
         border-radius: 4px;
