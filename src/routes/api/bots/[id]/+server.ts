@@ -23,7 +23,16 @@ export const GET: RequestHandler = async ({ params }) => {
             return json({ error: "Bot not found" }, { status: 404 });
         }
 
-        return json(bot);
+        // Exclude openaiKey from the response for security
+        const { openaiKey, ...botWithoutKey } = bot;
+
+        // Only indicate if a key is set, but never return the actual key
+        const botResponse = {
+            ...botWithoutKey,
+            hasOpenaiKey: !!openaiKey,
+        };
+
+        return json(botResponse);
     } catch (error) {
         console.error("Error fetching bot:", error);
         return json({ error: "Failed to fetch bot" }, { status: 500 });
@@ -68,7 +77,16 @@ export const PUT: RequestHandler = async ({ params, request }) => {
             },
         });
 
-        return json(bot);
+        // Exclude openaiKey from the response for security
+        const { openaiKey, ...botWithoutKey } = bot;
+
+        // Only indicate if a key is set, but never return the actual key
+        const botResponse = {
+            ...botWithoutKey,
+            hasOpenaiKey: !!openaiKey,
+        };
+
+        return json(botResponse);
     } catch (error) {
         console.error("Error updating bot:", error);
         return json({ error: "Failed to update bot" }, { status: 500 });

@@ -1,19 +1,33 @@
 import { json } from "@sveltejs/kit";
 import OpenAI from "openai";
+import { db } from "$lib/database.js";
 import type { RequestHandler } from "./$types";
 
 // GET - Fetch available OpenAI models
 export const GET: RequestHandler = async ({ url }) => {
     try {
-        const apiKey = url.searchParams.get("apiKey");
+        const botId = url.searchParams.get("botId");
 
-        if (!apiKey) {
-            return json({ error: "API key is required" }, { status: 400 });
+        if (!botId) {
+            return json({ error: "Bot ID is required" }, { status: 400 });
         }
 
-        // Create OpenAI instance with the provided key
+        // Fetch the bot to get its API key (server-side only)
+        const bot = await db.bot.findUnique({
+            where: { id: botId },
+            select: { openaiKey: true },
+        });
+
+        if (!bot || !bot.openaiKey) {
+            return json(
+                { error: "Bot not found or no API key set" },
+                { status: 400 }
+            );
+        }
+
+        // Create OpenAI instance with the bot's stored key
         const openai = new OpenAI({
-            apiKey: apiKey,
+            apiKey: bot.openaiKey,
         });
 
         // Fetch available models

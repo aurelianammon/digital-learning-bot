@@ -120,17 +120,8 @@
                     <div class="usage-item">
                         <h3>Chat with the Bot</h3>
                         <p>
-                            Mention the bot in your Telegram group chat (type @
-                            and select it) or reply to its messages. The bot
+                            Mention the bot in your Telegram group chat. The bot
                             will respond using AI based on your conversation.
-                        </p>
-                    </div>
-
-                    <div class="usage-item">
-                        <h3>Generate Images</h3>
-                        <p>
-                            Include the words "imagine" or "Traum" in your
-                            message to generate AI images based on your prompt.
                         </p>
                     </div>
 

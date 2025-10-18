@@ -27,7 +27,16 @@ export const POST: RequestHandler = async ({ request }) => {
             },
         });
 
-        return json(bot, { status: 201 });
+        // Exclude openaiKey from the response for security
+        const { openaiKey: _, ...botWithoutKey } = bot;
+
+        // Only indicate if a key is set, but never return the actual key
+        const botResponse = {
+            ...botWithoutKey,
+            hasOpenaiKey: !!openaiKey,
+        };
+
+        return json(botResponse, { status: 201 });
     } catch (error) {
         console.error("Error creating bot:", error);
         return json({ error: "Failed to create bot" }, { status: 500 });

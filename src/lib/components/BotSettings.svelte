@@ -114,7 +114,8 @@
     }
 
     $: if (selectedBot) {
-        openaiKey = selectedBot.openaiKey || "";
+        // Don't populate openaiKey field - it should remain empty for security
+        openaiKey = "";
         selectedModel = selectedBot.model || "gpt-4-1106-preview";
         linkedChat = selectedBot.linkedChatId
             ? {
@@ -132,7 +133,7 @@
 
     // Separate reactive statement for fetching models to avoid loops
     $: if (
-        selectedBot?.openaiKey &&
+        selectedBot?.hasOpenaiKey &&
         !hasFetchedModelsForCurrentBot &&
         !isLoadingModels
     ) {
@@ -193,13 +194,13 @@
     }
 
     async function fetchAvailableModels() {
-        if (!openaiKey.trim()) return;
+        if (!selectedBotId) return;
 
         isLoadingModels = true;
 
         try {
             const response = await fetch(
-                `/api/openai/models?apiKey=${encodeURIComponent(openaiKey)}`
+                `/api/openai/models?botId=${encodeURIComponent(selectedBotId)}`
             );
             const result = await response.json();
 
@@ -466,7 +467,7 @@
                 on:click={() => (showApiKeySettings = !showApiKeySettings)}
                 class:active={showApiKeySettings}
             >
-                {#if selectedBot?.openaiKey}
+                {#if selectedBot?.hasOpenaiKey}
                     <label class="section-label">OpenAI Configuration ✔️</label>
                 {:else}
                     <label class="section-label">OpenAI Configuration</label>
@@ -478,7 +479,7 @@
             {#if showApiKeySettings}
                 <div class="setting-content">
                     <div class="api-key-section">
-                        {#if !selectedBot?.openaiKey}
+                        {#if !selectedBot?.hasOpenaiKey}
                             <input
                                 type="password"
                                 bind:value={openaiKey}
@@ -487,23 +488,23 @@
                             />
                         {/if}
                         <button
-                            on:click={selectedBot?.openaiKey
+                            on:click={selectedBot?.hasOpenaiKey
                                 ? removeApiKey
                                 : updateApiKey}
                             class="save-button"
-                            class:remove-button={selectedBot?.openaiKey}
+                            class:remove-button={selectedBot?.hasOpenaiKey}
                             disabled={isTestingApiKey}
                         >
                             {#if isTestingApiKey}
                                 Testing...
-                            {:else if selectedBot?.openaiKey}
+                            {:else if selectedBot?.hasOpenaiKey}
                                 Remove Key
                             {:else}
                                 Save Key
                             {/if}
                         </button>
                     </div>
-                    {#if selectedBot?.openaiKey}
+                    {#if selectedBot?.hasOpenaiKey}
                         <select
                             bind:value={selectedModel}
                             on:change={updateModel}
