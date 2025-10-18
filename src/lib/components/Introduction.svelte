@@ -88,11 +88,12 @@
                             <li>
                                 Use your Bot ID to access your bot dashboard
                             </li>
-                            <li>Go to the "Bot Settings" tab</li>
+                            <li>Go to the Settings</li>
                             <li>Enter your OpenAI API key</li>
                             <li>
-                                Optionally customize the bot's system prompt to
-                                define its personality and behavior
+                                Customize the bot's system prompt to define its
+                                personality and behavior by editing the Context
+                                or adding pdffiles
                             </li>
                         </ol>
                     </div>
@@ -109,7 +110,6 @@
                                 In the group, type <code>/link</code> and follow
                                 the instructions
                             </li>
-                            <li>For example: <code>/link abc-123-def</code></li>
                         </ol>
                     </div>
                 </section>

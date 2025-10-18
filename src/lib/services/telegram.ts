@@ -12,6 +12,60 @@ import { formatMessagesForAI } from "../utilities/messageFormatter.js";
 
 export let bot: Telegraf | null = null;
 
+/**
+ * Helper function to process a message and generate AI response
+ * @param ctx - Telegram context
+ * @param messageText - The message text to process
+ * @param linkedBot - The bot configuration
+ * @param errorMessage - Custom error message if processing fails
+ */
+async function processMessageAndRespond(
+    ctx: any,
+    messageText: string,
+    linkedBot: any,
+    errorMessage: string = "Sorry, I had trouble processing your message."
+) {
+    // Small delay to ensure database write is committed
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Check if the bot should respond
+    const shouldRespond = await shouldBotRespond(messageText, linkedBot);
+
+    if (linkedBot && shouldRespond) {
+        await ctx.sendChatAction("typing");
+
+        try {
+            const formattedMessages = await formatMessagesForAI(
+                linkedBot.id,
+                100
+            );
+
+            const completion = await createChatCompletion(
+                formattedMessages,
+                linkedBot.id
+            );
+
+            // Save the assistant response
+            await db.message.create({
+                data: {
+                    role: "assistant",
+                    content:
+                        completion || "Sorry, I could not generate a response.",
+                    name: linkedBot.name,
+                    botId: linkedBot.id,
+                },
+            });
+
+            await ctx.reply(
+                completion || "Sorry, I could not generate a response."
+            );
+        } catch (error) {
+            console.error("Error generating AI response:", error);
+            await ctx.reply(errorMessage);
+        }
+    }
+}
+
 export async function initializeTelegramBot() {
     if (!process.env.TELEGRAM_KEY) {
         console.warn(
@@ -42,6 +96,10 @@ export async function initializeTelegramBot() {
                 isActive: true,
             },
         });
+
+        if (!linkedBot) {
+            return;
+        }
 
         const botName = linkedBot?.name || "assistant";
 
@@ -169,8 +227,70 @@ export async function initializeTelegramBot() {
                 return;
             }
 
+            // Handle voice messages and audio files
+            if (
+                ("voice" in ctx.message && ctx.message.voice) ||
+                ("audio" in ctx.message && ctx.message.audio)
+            ) {
+                try {
+                    await ctx.sendChatAction("typing");
+
+                    // Get the audio file from Telegram
+                    let fileId: string;
+                    let audioType: string;
+
+                    if ("voice" in ctx.message && ctx.message.voice) {
+                        fileId = ctx.message.voice.file_id;
+                        audioType = "voice";
+                    } else if ("audio" in ctx.message && ctx.message.audio) {
+                        fileId = ctx.message.audio.file_id;
+                        audioType = "audio";
+                    } else {
+                        return;
+                    }
+
+                    const fileLink = await ctx.telegram.getFileLink(fileId);
+
+                    // Import the transcription function
+                    const { transcribeAudio } = await import("./openai.js");
+
+                    // Transcribe the audio
+                    const transcribedText = await transcribeAudio(
+                        fileLink.href,
+                        linkedBot.openaiKey as string
+                    );
+
+                    console.log(
+                        `🎤 ${audioType} message transcribed:`,
+                        transcribedText
+                    );
+
+                    // Save the transcribed message
+                    await db.message.create({
+                        data: {
+                            role: "user",
+                            content: transcribedText,
+                            name: ctx.message.from.first_name,
+                            botId: linkedBot?.id || null,
+                        },
+                    });
+
+                    // Process the transcribed text and generate response
+                    await processMessageAndRespond(
+                        ctx,
+                        transcribedText,
+                        linkedBot,
+                        "Sorry, I had trouble processing your audio message."
+                    );
+                } catch (error) {
+                    console.error("Error processing audio message:", error);
+                    await ctx.reply(
+                        "Sorry, I had trouble transcribing your audio message."
+                    );
+                }
+            }
             // Handle images
-            if ("photo" in ctx.message && ctx.message.photo) {
+            else if ("photo" in ctx.message && ctx.message.photo) {
                 const photo = ctx.message.photo[ctx.message.photo.length - 1];
                 const fileLink = await ctx.telegram.getFileLink(photo.file_id);
                 const caption = await generateImageCaption(
@@ -208,52 +328,12 @@ export async function initializeTelegramBot() {
                     },
                 });
 
-                // Small delay to ensure database write is committed
-                await new Promise((resolve) => setTimeout(resolve, 100));
-
-                // Check if the bot should respond (either mentioned directly or based on conversation flow)
-                const shouldRespond = await shouldBotRespond(
+                // Process the message and generate response
+                await processMessageAndRespond(
+                    ctx,
                     ctx.message.text,
                     linkedBot
                 );
-
-                if (linkedBot && shouldRespond) {
-                    await ctx.sendChatAction("typing");
-
-                    try {
-                        const formattedMessages = await formatMessagesForAI(
-                            linkedBot.id,
-                            100
-                        );
-
-                        const completion = await createChatCompletion(
-                            formattedMessages,
-                            linkedBot.id
-                        );
-
-                        // Save the assistant response
-                        await db.message.create({
-                            data: {
-                                role: "assistant",
-                                content:
-                                    completion ||
-                                    "Sorry, I could not generate a response.",
-                                name: linkedBot.name,
-                                botId: linkedBot.id,
-                            },
-                        });
-
-                        await ctx.reply(
-                            completion ||
-                                "Sorry, I could not generate a response."
-                        );
-                    } catch (error) {
-                        console.error("Error generating AI response:", error);
-                        await ctx.reply(
-                            "Sorry, I had trouble processing your message."
-                        );
-                    }
-                }
             }
         } catch (error) {
             console.error("Error saving message:", error);
@@ -310,6 +390,31 @@ export function stopTelegramBot() {
 export async function restartTelegramBot() {
     stopTelegramBot();
     await initializeTelegramBot();
+}
+
+/**
+ * Send a photo to a specific chat
+ * This is used by the OpenAI service to send generated images
+ */
+export async function sendPhotoToChat(chatId: string, photoUrl: string) {
+    if (!bot) {
+        throw new Error("Bot not initialized");
+    }
+    return await bot.telegram.sendPhoto(chatId, photoUrl);
+}
+
+/**
+ * Send a voice message to a specific chat
+ * This is used by the OpenAI service to send generated audio
+ */
+export async function sendVoiceToChat(chatId: string, audioPath: string) {
+    if (!bot) {
+        throw new Error("Bot not initialized");
+    }
+    const fs = await import("fs");
+    return await bot.telegram.sendVoice(chatId, {
+        source: fs.createReadStream(audioPath),
+    });
 }
 async function gracefulShutdown() {
     try {

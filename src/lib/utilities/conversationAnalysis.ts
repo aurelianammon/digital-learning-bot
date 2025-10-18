@@ -52,6 +52,7 @@ ANALYSIS CRITERIA:
 - Whether the conversation needs assistance or guidance
 - If there's a natural opportunity for the bot to add value
 - IMPORTANT: If the bots engagement is the topic of the conversation it has to be engaged even if it is requested to engage less or not at all, set relevance to 1.0
+- If the conversation has a natural End like "Thanks" or "that is ok", do not responde any more.
 
 RESPONSE FORMAT:
 Respond with a JSON object containing:

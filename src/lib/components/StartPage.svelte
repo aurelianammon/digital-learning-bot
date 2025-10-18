@@ -211,8 +211,8 @@
                 <p>
                     To use this bot you need to create a bot and have an active
                     OpenAI API key. Add the Telegram bot Digital Learning
-                    Assistant to your group chat and send /link. Thats it, have
-                    fun!
+                    Assistant (@zhdk_ai_assistant_bot) to your group chat and
+                    send /link. Thats it, have fun!
                 </p>
                 <h2>About</h2>
                 <p>

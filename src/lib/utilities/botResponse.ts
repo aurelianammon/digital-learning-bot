@@ -52,7 +52,7 @@ export async function shouldBotRespond(
             return cached.result;
         }
 
-        console.log("Analyzing conversation engagement", formattedMessages);
+        // console.log("Analyzing conversation engagement", formattedMessages);
 
         // Use AI to analyze conversation and decide on engagement
         const analysis = await analyzeConversationEngagement(

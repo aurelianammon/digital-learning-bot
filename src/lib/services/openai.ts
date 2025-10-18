@@ -6,7 +6,7 @@ export async function createChatCompletion(
     messages: Array<{ role: string; content: string }>,
     botId?: string
 ) {
-    console.log("Creating chat completion", messages, botId);
+    // console.log("Creating chat completion", messages, botId);
     try {
         // Get bot-specific context, API key, and model from database
         let context: Array<{ role: "system"; content: string }> = [];
@@ -34,7 +34,7 @@ export async function createChatCompletion(
             const internalContext =
                 "Your name is " +
                 bot?.name +
-                ". You are an intelligent assistant with multiple capabilities. IMPORTANT: You can use MULTIPLE tools in a single response if the user's request requires it. For example, if they ask for a reminder AND want you to change engagement, use BOTH createTask AND changeEngagementFactor tools. You can also use tools that depend on each other - for example, use getCurrentEngagement to check the current engagement level before using changeEngagementFactor to modify it. CRITICAL RELATIVE CALCULATIONS: When users ask for relative changes (like 'reduce a bit', 'increase slightly', 'make it less'), you MUST: 1) Use getCurrentEngagement first, 2) Calculate the new value based on the current value and the user's request: 'a bit' = ±0.1, 'slightly' = ±0.1, 'more/less' = ±0.2, 'much' = ±0.3, 'significantly' = ±0.4, 3) Use changeEngagementFactor with the calculated value. Example: current=0.8, user says 'reduce a bit' → calculate 0.8-0.1=0.7 → use changeEngagementFactor(0.7). Always respond with plain text messages only. Do not format your responses as JSON objects. Respond naturally as a conversational assistant.";
+                ". You are an intelligent assistant with multiple capabilities. IMPORTANT: You can use MULTIPLE tools in a single response if the user's request requires it. For example, if they ask for a reminder AND want you to change engagement, use BOTH createTask AND changeEngagementFactor tools. You can also use tools that depend on each other - for example, use getCurrentEngagement to check the current engagement level before using changeEngagementFactor to modify it. CRITICAL RELATIVE CALCULATIONS: When users ask for relative changes (like 'reduce a bit', 'increase slightly', 'make it less'), you MUST: 1) Use getCurrentEngagement first, 2) Calculate the new value based on the current value and the user's request: 'a bit' = ±0.1, 'slightly' = ±0.1, 'more/less' = ±0.2, 'much' = ±0.3, 'significantly' = ±0.4, 3) Use changeEngagementFactor with the calculated value. Example: current=0.8, user says 'reduce a bit' → calculate 0.8-0.1=0.7 → use changeEngagementFactor(0.7). Always respond with plain text messages only. Do not format your responses as JSON objects or set for example 'Name:' or in general 'Description:' in front of the message. Respond naturally as a conversational assistant. If the engagement factor has changed, do not respond with a number or talk about the EngagementFactor, just say that you will engage more/less, a lot/little from now on, regarding the new engagement factor. \n\nCRITICAL DATE AND TIME FORMATTING RULES:\n- NEVER include time zones (no GMT, UTC, CET, etc.) in your responses\n- Always format dates and times according to the conversation's language:\n  * English: 'Monday, January 15 at 3:00 PM' or '3:00 PM on January 15'\n  * German: 'Montag, 15. Januar um 15:00 Uhr' or '15:00 Uhr am 15. Januar'\n  * French: 'lundi 15 janvier à 15h00' or '15h00 le 15 janvier'\n  * Spanish: 'lunes 15 de enero a las 15:00' or '15:00 el 15 de enero'\n- Use natural, conversational date references when possible: 'tomorrow at 3 PM', 'next Monday at 10 AM', 'morgen um 15 Uhr', 'demain à 15h'\n- For time-only references, match the language: 'at 3 PM' (English), 'um 15 Uhr' (German), 'à 15h' (French), 'a las 15:00' (Spanish)\n- Never write dates in ISO format (2024-01-15) in user-facing messages. IMPORTANT: If an image is generated, NEVER add the Url of the image to the response, the image will be send automatically to the chat";
 
             // Build context with uploaded documents
             let contextContent = bot?.context || "";
@@ -99,12 +99,12 @@ export async function createChatCompletion(
                             message: {
                                 type: "string",
                                 description:
-                                    "The message/content of the task, create a natural and engaging message for the user, something that would be a good reminder for the user to do. Do not write the time in the message, just the task.",
+                                    "The message/content of the task - create a natural and engaging message for the user. IMPORTANT: Do NOT include any time or date information in the message (the date is stored separately). Do NOT write prefixes like 'Reminder:', 'Task:', etc. Just write the action. Examples: if user says 'remind me to drink water tomorrow at 3pm', the message should be 'Drink water' (not 'Drink water at 3pm'). Other good examples: 'Make a phone call', 'Send an email', 'Check the weather'.",
                             },
                             date: {
                                 type: "string",
                                 description:
-                                    "When the task should be executed (ISO date string)",
+                                    "When the task should be executed (ISO date string middle Europe time)",
                             },
                             reason: {
                                 type: "string",
@@ -151,6 +151,25 @@ export async function createChatCompletion(
                         type: "object",
                         properties: {},
                         required: [],
+                    },
+                },
+            },
+            {
+                type: "function",
+                function: {
+                    name: "generateImage",
+                    description:
+                        "Generate an image based on a prompt. Use this when users ask you to generate an image based on a prompt. IMPORTANT: The prompt should be a natural and engaging prompt for the user, something that would be a good image for the user to see. Do not write the time in the prompt, just the task. DO not write stuf like 'reminder:' or 'task:' in the prompt. For example, if the user says 'generate an image of a cat', the prompt should be 'A cat'. Other examples are ;'Generate an image of a dog' or 'Generate an image of a bird' or 'Generate an image of a car'",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            prompt: {
+                                type: "string",
+                                description:
+                                    "The prompt to generate an image from.",
+                            },
+                        },
+                        required: ["prompt"],
                     },
                 },
             },
@@ -244,6 +263,54 @@ export async function createChatCompletion(
                             };
                         }
 
+                    case "generateImage":
+                        console.log("🤖 Generating image:", args);
+                        const imageResult = await createImage(
+                            args.prompt,
+                            botId || ""
+                        );
+                        console.log("📸 Image generation result:", imageResult);
+
+                        // Send the image to the linked Telegram chat
+                        if (imageResult && botId) {
+                            try {
+                                const bot = await db.bot.findUnique({
+                                    where: { id: botId },
+                                    select: { linkedChatId: true, name: true },
+                                });
+
+                                if (bot?.linkedChatId) {
+                                    // Use dynamic import to avoid circular dependency
+                                    const { sendPhotoToChat } = await import(
+                                        "./telegram.js"
+                                    );
+                                    await sendPhotoToChat(
+                                        bot.linkedChatId,
+                                        imageResult
+                                    );
+                                    console.log(
+                                        "✅ Image sent to chat:",
+                                        bot.linkedChatId
+                                    );
+                                } else {
+                                    console.warn(
+                                        "⚠️ No linked chat found for bot, image not sent to Telegram"
+                                    );
+                                }
+                            } catch (error) {
+                                console.error(
+                                    "❌ Error sending image to chat:",
+                                    error
+                                );
+                            }
+                        }
+
+                        return {
+                            success: true,
+                            message: `Image generated successfully!`,
+                            imageUrl: imageResult,
+                        };
+
                     default:
                         return {
                             success: false,
@@ -332,7 +399,7 @@ export async function createChatCompletion(
             conversationMessages.push({
                 role: "system",
                 content:
-                    "Respond with plain text only. Do not format your response as JSON. Be conversational, natural and not too technical. Summarize what was accomplished.",
+                    "Respond with plain text only. Do not format your response as JSON and do NOT set a name in frot of the message. Be conversational, natural and not too technical. Summarize what was accomplished.",
             });
 
             const finalChat = await openai.chat.completions.create({
@@ -400,6 +467,149 @@ export async function createImage(prompt: string, botId?: string) {
         return response.data?.[0]?.url || "";
     } catch (error) {
         console.error("Error creating image:", error);
+        throw error;
+    }
+}
+
+/**
+ * Transcribe audio/voice using OpenAI Whisper
+ * @param audioFilePath - Path to the audio file or URL
+ * @param apiKey - OpenAI API key
+ * @returns Transcribed text
+ */
+export async function transcribeAudio(
+    audioFilePath: string,
+    apiKey: string
+): Promise<string> {
+    try {
+        const openai = new OpenAI({
+            apiKey: apiKey,
+        });
+
+        // Import required modules for file handling
+        const fs = await import("fs");
+        const path = await import("path");
+        const https = await import("https");
+        const http = await import("http");
+
+        let fileToTranscribe: any;
+
+        // Check if the input is a URL or local file path
+        if (
+            audioFilePath.startsWith("http://") ||
+            audioFilePath.startsWith("https://")
+        ) {
+            // Download the file from URL
+            const tempDir = path.join(
+                process.cwd(),
+                "static",
+                "upload",
+                "temp"
+            );
+
+            // Create temp directory if it doesn't exist
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
+            }
+
+            const tempFilePath = path.join(tempDir, `voice_${Date.now()}.ogg`);
+            const file = fs.createWriteStream(tempFilePath);
+
+            await new Promise((resolve, reject) => {
+                const protocol = audioFilePath.startsWith("https://")
+                    ? https
+                    : http;
+                protocol
+                    .get(audioFilePath, (response) => {
+                        response.pipe(file);
+                        file.on("finish", () => {
+                            file.close();
+                            resolve(true);
+                        });
+                    })
+                    .on("error", (err) => {
+                        fs.unlinkSync(tempFilePath);
+                        reject(err);
+                    });
+            });
+
+            fileToTranscribe = fs.createReadStream(tempFilePath);
+        } else {
+            // Use local file
+            fileToTranscribe = fs.createReadStream(audioFilePath);
+        }
+
+        const transcription = await openai.audio.transcriptions.create({
+            file: fileToTranscribe,
+            model: "whisper-1",
+        });
+
+        // Clean up temp file if it was downloaded
+        if (
+            audioFilePath.startsWith("http://") ||
+            audioFilePath.startsWith("https://")
+        ) {
+            const tempDir = path.join(
+                process.cwd(),
+                "static",
+                "upload",
+                "temp"
+            );
+            const tempFilePath = path.join(tempDir, `voice_${Date.now()}.ogg`);
+            if (fs.existsSync(tempFilePath)) {
+                fs.unlinkSync(tempFilePath);
+            }
+        }
+
+        return transcription.text;
+    } catch (error) {
+        console.error("Error transcribing audio:", error);
+        throw error;
+    }
+}
+
+/**
+ * Generate speech from text using OpenAI TTS
+ * @param text - Text to convert to speech
+ * @param apiKey - OpenAI API key
+ * @param voice - Voice to use (alloy, echo, fable, onyx, nova, shimmer)
+ * @returns Path to the generated audio file
+ */
+export async function generateSpeech(
+    text: string,
+    apiKey: string,
+    voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy"
+): Promise<string> {
+    try {
+        const openai = new OpenAI({
+            apiKey: apiKey,
+        });
+
+        const fs = await import("fs");
+        const path = await import("path");
+
+        const mp3 = await openai.audio.speech.create({
+            model: "tts-1",
+            voice: voice,
+            input: text,
+        });
+
+        // Create directory if it doesn't exist
+        const audioDir = path.join(process.cwd(), "static", "upload", "audio");
+        if (!fs.existsSync(audioDir)) {
+            fs.mkdirSync(audioDir, { recursive: true });
+        }
+
+        // Save the audio file
+        const fileName = `tts_${Date.now()}.mp3`;
+        const filePath = path.join(audioDir, fileName);
+
+        const buffer = Buffer.from(await mp3.arrayBuffer());
+        await fs.promises.writeFile(filePath, buffer);
+
+        return filePath;
+    } catch (error) {
+        console.error("Error generating speech:", error);
         throw error;
     }
 }
