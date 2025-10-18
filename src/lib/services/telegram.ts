@@ -164,6 +164,15 @@ export async function initializeTelegramBot() {
         }
     });
 
+    // Unlink command
+    bot.command("unlink", async (ctx) => {
+        await db.bot.update({
+            where: { linkedChatId: String(ctx.chat.id) },
+            data: { linkedChatId: null },
+        });
+        await ctx.reply("Chat unlinked from bot.");
+    });
+
     // Stats command
     bot.command("stats", async (ctx) => {
         // Find which bot this chat is linked to
@@ -184,21 +193,6 @@ export async function initializeTelegramBot() {
             await ctx.reply(
                 `This chat is not linked to any bot. Use /link to connect.`
             );
-        }
-    });
-
-    // Handle image generation requests
-    bot.hears(/\b(?:imagine|Traum)\b/, async (ctx) => {
-        await ctx.sendChatAction("typing");
-
-        try {
-            const url = await createImage(ctx.message.text);
-            if (url) {
-                await ctx.replyWithPhoto(url);
-            }
-        } catch (error) {
-            console.error("Error generating image:", error);
-            await ctx.reply("Sorry, I had trouble generating that image.");
         }
     });
 
