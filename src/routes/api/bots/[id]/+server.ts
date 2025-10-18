@@ -43,6 +43,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
             "model",
             "isActive",
             "engagementFactor",
+            "introShown",
         ];
         const filteredUpdates = Object.keys(updates)
             .filter((key) => allowedFields.includes(key))

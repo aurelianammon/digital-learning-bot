@@ -1,10 +1,76 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import Introduction from "$lib/components/Introduction.svelte";
 
     export let selectedBotId: string;
 
+    let showIntro = false;
+    let selectedBot: any = null;
+    let hasCheckedIntro = false;
+
+    onMount(async () => {
+        if (selectedBotId) {
+            await loadBotForIntro();
+        }
+    });
+
+    async function loadBotForIntro() {
+        try {
+            const botResponse = await fetch(`/api/bots/${selectedBotId}`);
+            if (botResponse.ok) {
+                selectedBot = await botResponse.json();
+                // Check if intro should be shown
+                if (!selectedBot.introShown) {
+                    setTimeout(() => {
+                        showIntro = true;
+                    }, 1000);
+                }
+                hasCheckedIntro = true;
+            }
+        } catch (error) {
+            console.error("Error loading bot for intro:", error);
+        }
+    }
+
+    // Watch for intro being closed and update the database
+    $: if (
+        hasCheckedIntro &&
+        !showIntro &&
+        selectedBot &&
+        !selectedBot.introShown
+    ) {
+        updateIntroShown();
+    }
+
+    async function updateIntroShown() {
+        if (!selectedBotId) return;
+
+        try {
+            await fetch(`/api/bots/${selectedBotId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    introShown: true,
+                }),
+            });
+            // Update local state
+            if (selectedBot) {
+                selectedBot.introShown = true;
+            }
+        } catch (error) {
+            console.error("Error updating intro shown status:", error);
+        }
+    }
+
     function goToStartPage() {
         goto("/");
+    }
+
+    function showIntroduction() {
+        showIntro = true;
     }
 </script>
 
@@ -15,6 +81,14 @@
             <span class="short-title">D.L.A.</span>
         </h1>
         <div class="buttons">
+            <button
+                class="nav-button"
+                class:active={showIntro}
+                title="Introduction"
+                on:click={showIntroduction}
+            >
+                Intro
+            </button>
             <button
                 class="nav-button id-button"
                 title="Copy Bot ID to clipboard"
@@ -32,6 +106,8 @@
         </div>
     </div>
 </nav>
+
+<Introduction bind:isVisible={showIntro} />
 
 <style>
     .navigation {
@@ -83,8 +159,10 @@
         border-color: white;
     }
 
-    .nav-button:active {
-        transform: translateY(1px);
+    .nav-button.active {
+        background: white;
+        color: black;
+        border-color: white;
     }
 
     .buttons {

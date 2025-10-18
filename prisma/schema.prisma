@@ -72,6 +72,7 @@ model Bot {
   context     String?  // Bot-specific context/personality
   isActive    Boolean  @default(true)
   engagementFactor Float @default(0.5) // Probability factor for AI engagement (0.0-1.0)
+  introShown  Boolean  @default(false) // Whether the intro modal has been shown
   // Single chat per bot
   linkedChatId String? @unique // Telegram chat ID
   linkedAt     DateTime? // When the chat was linked
