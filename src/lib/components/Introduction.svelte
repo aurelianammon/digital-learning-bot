@@ -46,7 +46,11 @@
             <button class="close-button" on:click={close}>×</button>
             <div class="modal-content">
                 <div class="tile-title">
-                    Welcome to Digital Learning Assistant
+                    {#if window.innerWidth < 800}
+                        Welcome
+                    {:else}
+                        Welcome to Digital Learning Assistant
+                    {/if}
                 </div>
 
                 <section>
@@ -317,5 +321,11 @@
 
     .usage-item {
         margin-bottom: 10px;
+    }
+
+    @media (max-width: 800px) {
+        .modal::after {
+            max-width: calc(100% - 40px);
+        }
     }
 </style>
